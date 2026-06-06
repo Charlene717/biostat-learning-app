@@ -4,6 +4,13 @@
 
 繁體中文介面，搭配英文術語。專為醫學院 / 公衛 / 臨床研究學習者設計。
 
+**🔗 線上版：[charlene717.github.io/biostat-learning-app](https://charlene717.github.io/biostat-learning-app/)**
+
+| 版本 | 連結 |
+|------|------|
+| 桌機 / 響應式 | [index.html](https://charlene717.github.io/biostat-learning-app/index.html) |
+| 手機版 | [mobile.html](https://charlene717.github.io/biostat-learning-app/mobile.html) |
+
 ---
 
 ## ✨ 功能總覽
@@ -58,7 +65,7 @@ npx serve
 2. Source 選 `Deploy from a branch`，Branch 選 `main` / `(root)`
 3. 儲存後等待數分鐘，網址為：
    ```
-   https://<使用者名稱>.github.io/biostat-learning-app/index.html
+   https://charlene717.github.io/biostat-learning-app/index.html
    ```
 
 ---
