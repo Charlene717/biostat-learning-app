@@ -1,0 +1,156 @@
+/* account.css — account modal styles (desktop + mobile) */
+.acc-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(15, 20, 22, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid; place-items: center;
+  padding: 20px;
+  animation: acc-fade .18s ease;
+}
+@keyframes acc-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.acc-modal {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  width: 100%; max-width: 440px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 22px;
+  box-shadow: 0 24px 60px -16px rgba(0,0,0,.35);
+  animation: acc-pop .2s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes acc-pop { from { transform: translateY(10px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.acc-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.acc-eyebrow {
+  font-family: var(--f-mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+.acc-head h2 { font-size: 20px; margin: 4px 0 0; font-weight: 600; letter-spacing: -0.015em; }
+.acc-close {
+  width: 32px; height: 32px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg);
+  color: var(--ink-2); font-size: 14px; cursor: pointer;
+  display: grid; place-items: center;
+}
+.acc-close:hover { color: var(--ink); }
+
+.acc-msg {
+  background: var(--accent-soft); color: var(--accent-ink);
+  border-radius: 10px; padding: 9px 12px;
+  font-size: 12.5px; margin-bottom: 14px;
+}
+
+.acc-section-label {
+  font-family: var(--f-mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--ink-3);
+  margin: 16px 0 8px;
+}
+
+.acc-users { display: flex; flex-direction: column; gap: 8px; }
+.acc-user {
+  display: grid; grid-template-columns: 40px 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.acc-user:hover { border-color: var(--line-2); }
+.acc-user.active { border-color: var(--ink); background: color-mix(in oklch, var(--ink) 3%, var(--panel)); }
+.acc-avatar {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  color: white; font-family: var(--f-mono);
+  font-size: 18px; font-weight: 600;
+}
+.acc-user-info { min-width: 0; }
+.acc-user-name {
+  font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; gap: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.acc-badge {
+  font-family: var(--f-mono); font-size: 9px;
+  background: var(--accent); color: white;
+  padding: 2px 6px; border-radius: 999px;
+  letter-spacing: 0.04em; flex-shrink: 0;
+}
+.acc-user-stat { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+.acc-del {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--ink-3); cursor: pointer;
+  display: grid; place-items: center;
+}
+.acc-del:hover { color: var(--bad); background: color-mix(in oklch, var(--bad) 8%, transparent); }
+
+.acc-add { display: flex; gap: 8px; }
+.acc-add input {
+  flex: 1; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--ink);
+  font-family: inherit; font-size: 13px;
+}
+.acc-add input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.acc-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg);
+  color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer;
+}
+.acc-btn:hover { border-color: var(--line-2); }
+.acc-btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.acc-io { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.acc-import-mode {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 12px; color: var(--ink-3);
+}
+.acc-import-mode label {
+  display: inline-flex; align-items: center; gap: 5px;
+  cursor: pointer; color: var(--ink-2);
+}
+.acc-import-mode label.on { color: var(--ink); font-weight: 500; }
+.acc-import-mode input { accent-color: var(--accent); }
+
+.acc-foot {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  font-size: 11.5px; color: var(--ink-3); line-height: 1.6;
+}
+
+/* Sidebar/account trigger affordance */
+.sb-streak { cursor: pointer; transition: border-color .15s; }
+.sb-streak:hover { border-color: var(--line-2); }
+.sb-streak .acc-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.sb-streak .acc-mini {
+  width: 24px; height: 24px; border-radius: 7px;
+  display: grid; place-items: center;
+  color: white; font-family: var(--f-mono); font-size: 12px; font-weight: 600;
+}
+.sb-streak .acc-name {
+  font-size: 12px; font-weight: 500; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sb-streak .acc-switch {
+  font-family: var(--f-mono); font-size: 9px;
+  color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em;
+}

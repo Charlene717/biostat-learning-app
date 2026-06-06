@@ -26,9 +26,12 @@ window.MHome = function MHome({ onNav, onOpenTopic }) {
       <div className="m-header">
         <div>
           <div className="greet">5 月 25 日 · 週一</div>
-          <h1>早安，Yuki</h1>
+          <h1>早安，{window.UserManager ? window.UserManager.getActiveUser().name : 'Yuki'}</h1>
         </div>
-        <div className="avatar">Y</div>
+        <div className="avatar" onClick={() => window.openAccountModal && window.openAccountModal()}
+          style={{cursor: 'pointer', background: window.UserManager ? window.UserManager.getActiveUser().color : 'var(--ink)'}}>
+          {window.UserManager ? window.UserManager.getActiveUser().avatar : 'Y'}
+        </div>
       </div>
 
       <div className="m-scroll">

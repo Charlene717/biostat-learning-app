@@ -1,17 +1,23 @@
-// quiz-stats.js — persistent quiz progress + wrong-answer log
+// quiz-stats.js — persistent quiz progress + wrong-answer log (per active user)
 (function () {
-  const KEY = 'biostat-quiz-stats-v1';
+  // Storage key resolves to the active user's namespace (falls back to legacy key)
+  function KEY() {
+    if (window.UserManager && window.UserManager.getActiveStatsKey) {
+      return window.UserManager.getActiveStatsKey();
+    }
+    return 'biostat-quiz-stats-v1';
+  }
 
   function load() {
     try {
-      const raw = localStorage.getItem(KEY);
+      const raw = localStorage.getItem(KEY());
       return raw ? JSON.parse(raw) : { history: [], wrong: {}, totals: {} };
     } catch (e) {
       return { history: [], wrong: {}, totals: {} };
     }
   }
   function save(data) {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+    try { localStorage.setItem(KEY(), JSON.stringify(data)); } catch (e) {}
   }
 
   // Record one completed session: arr of { q, value, correct }

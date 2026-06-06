@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="mobile-styles.css" />
 <link rel="stylesheet" href="lesson-reader.css" />
 <link rel="stylesheet" href="interactives.css" />
+<link rel="stylesheet" href="account.css" />
 
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
@@ -21,9 +22,17 @@
 <script src="data.js"></script>
 <script src="lessons.js"></script>
 <script src="quiz-bank.js"></script>
+<script src="user-manager.js"></script>
 <script src="quiz-stats.js"></script>
 </head>
 <body data-theme="light">
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="20" fill="#0e8c8c"/>
+      <text x="50" y="64" font-family="Georgia, serif" font-size="44" font-weight="700"
+        fill="#ffffff" text-anchor="middle">μ</text>
+    </svg>
+  </template>
   <div id="root"></div>
 
   <script type="text/babel" src="tweaks-panel.jsx"></script>
@@ -35,6 +44,7 @@
   <script type="text/babel" src="quiz-engine.jsx"></script>
   <script type="text/babel" src="lesson-reader.jsx"></script>
   <script type="text/babel" src="lab-screens.jsx"></script>
+  <script type="text/babel" src="account.jsx"></script>
   <script type="text/babel" src="mobile-screens.jsx"></script>
   <script type="text/babel" src="mobile-app.jsx"></script>
 </body>

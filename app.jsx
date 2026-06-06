@@ -116,15 +116,19 @@ function App() {
 
   const activeNav = (view.screen === 'topic' || view.screen === 'lesson') ? 'lib' : view.screen;
 
+  // user switch → bump key to remount content with fresh per-user data
+  const [userBump, setUserBump] = useState(0);
+
   return (
     <>
       <div className="app">
-        <window.Sidebar active={activeNav} onNav={nav} />
-        <main className="main" data-screen-label={`${activeNav} screen`}>
+        <window.Sidebar active={activeNav} onNav={nav} key={`sb-${userBump}`} />
+        <main className="main" data-screen-label={`${activeNav} screen`} key={`main-${userBump}`}>
           {content}
         </main>
       </div>
 
+      <window.AccountModal onUserChange={() => setUserBump(b => b + 1)} />
       <window.TweaksPanel title="Tweaks">
         <window.TweakSection label="主題色 Theme" />
         <window.TweakColor

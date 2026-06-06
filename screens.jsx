@@ -33,7 +33,7 @@ window.Sidebar = function Sidebar({ active, onNav }) {
           </button>
         ))}
       </nav>
-      <div className="sb-streak">
+      <div className="sb-streak" onClick={() => window.openAccountModal && window.openAccountModal()}>
         <div className="row">
           <div className="n">12</div>
           <div className="label">連續天數</div>
@@ -43,6 +43,16 @@ window.Sidebar = function Sidebar({ active, onNav }) {
             <div key={i} className={`dot ${on?'on':''}`} />
           ))}
         </div>
+        {window.UserManager && (() => {
+          const u = window.UserManager.getActiveUser();
+          return (
+            <div className="acc-row">
+              <div className="acc-mini" style={{background: u.color}}>{u.avatar}</div>
+              <div className="acc-name">{u.name}</div>
+              <div className="acc-switch">切換 ›</div>
+            </div>
+          );
+        })()}
       </div>
     </aside>
   );
@@ -247,7 +257,7 @@ window.Library = function Library({ onOpenTopic }) {
     <div>
       <div className="page-head">
         <div>
-          <div className="crumb">Library · 9 topics</div>
+          <div className="crumb">Library · {D.topics.length} topics</div>
           <h1>主題庫</h1>
           <div className="sub">從描述統計到 Cox 比例風險。每個主題包含概念、互動、練習、計算工具。</div>
         </div>

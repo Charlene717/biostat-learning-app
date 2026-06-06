@@ -71,6 +71,9 @@ function MobileApp() {
   const openLesson = (idx) => setView(v => ({ screen: 'lesson', topicId: v.topicId, lessonIdx: idx }));
   const backToTopic = () => setView(v => ({ screen: 'topic', topicId: v.topicId, lessonIdx: 0 }));
 
+  // user switch → remount to reflect new per-user data + avatar
+  const [userBump, setUserBump] = useState(0);
+
   let body = null;
   switch (view.screen) {
     case 'home':    body = <window.MHome onNav={nav} onOpenTopic={openTopic} />; break;
@@ -114,14 +117,16 @@ function MobileApp() {
   return (
     <div className={`phone-page ${bare ? 'bare' : ''}`}>
       {bare ? (
-        <div className="phone-bare">{appInner}</div>
+        <div className="phone-bare" key={`pb-${userBump}`}>{appInner}</div>
       ) : (
-        <div className="phone-wrap">
+        <div className="phone-wrap" key={`pw-${userBump}`}>
           <window.IOSDevice width={402} height={874} dark={tweaks.dark}>
             {appInner}
           </window.IOSDevice>
         </div>
       )}
+
+      <window.AccountModal onUserChange={() => setUserBump(b => b + 1)} />
 
       <window.TweaksPanel title="Tweaks">
         <window.TweakSection label="主題色 Theme" />
