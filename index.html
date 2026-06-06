@@ -3,39 +3,85 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>生物統計 · Biostat Lab</title>
-
-<!-- Fonts -->
+<title>BioLearn · 生資學堂</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@400;500;600&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
 
-<link rel="stylesheet" href="styles.css" />
-<link rel="stylesheet" href="lesson-reader.css" />
-<link rel="stylesheet" href="interactives.css" />
-
-<!-- React + Babel -->
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-<script src="data.js"></script>
-<script src="lessons.js"></script>
-<script src="quiz-bank.js"></script>
-<script src="quiz-stats.js"></script>
-</head>
-<body data-theme="light">
-  <div id="root"></div>
+<style>
+  :root{
+    --bg: #EFEDE6;
+    --panel: #FAFAF7;
+    --surface: #FFFFFF;
+    --ink: #0F1614;
+    --ink-2: #2A3330;
+    --muted: #707974;
+    --line: #E5E2D9;
+    --line-2: #D7D3C7;
+    --accent: #0E9384;
+    --accent-ink: #064E47;
+    --accent-soft: #DCF1ED;
+    --warn: #C8651B;
+    --danger: #B5453C;
+    --A: #E25858;
+    --T: #4F94D8;
+    --G: #EAA532;
+    --C: #4FB37E;
+    --U: #9C77C7;
+    --N: #A8A89B;
+  }
+  html, body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Manrope','Noto Sans TC',-apple-system,system-ui,sans-serif; }
+  body{ background: var(--bg); color: var(--ink); }
+  *{ box-sizing: border-box; }
 
-  <script type="text/babel" src="tweaks-panel.jsx"></script>
-  <script type="text/babel" src="charts.jsx"></script>
-  <script type="text/babel" src="calc-math.js"></script>
-  <script type="text/babel" src="interactives.jsx"></script>
-  <script type="text/babel" src="calculators.jsx"></script>
-  <script type="text/babel" src="quiz-engine.jsx"></script>
-  <script type="text/babel" src="lesson-reader.jsx"></script>
-  <script type="text/babel" src="lab-screens.jsx"></script>
-  <script type="text/babel" src="screens.jsx"></script>
-  <script type="text/babel" src="app.jsx"></script>
+  /* Full-viewport responsive app shell — no phone bezel / status bar */
+  .app-viewport{
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .app-scroll{
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  #app-root{ width: 100%; }
+</style>
+</head>
+<body>
+
+<div id="app-root"></div>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="widgets.jsx"></script>
+<script type="text/babel" src="flashcards.jsx"></script>
+<script type="text/babel" src="quiz-bank.jsx"></script>
+<script type="text/babel" src="blast.jsx"></script>
+<script type="text/babel" src="tools.jsx"></script>
+<script type="text/babel" src="lessons.jsx"></script>
+<script type="text/babel" src="study.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<script>
+  // tweak defaults (persisted on disk via host)
+  window.__BIOLEARN_TWEAKS = /*EDITMODE-BEGIN*/{
+    "accent": "magenta",
+    "dark": false,
+    "fontScale": 1,
+    "showStreak": true
+  }/*EDITMODE-END*/;
+</script>
+
 </body>
 </html>

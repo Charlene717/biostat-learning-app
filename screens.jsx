@@ -1,1186 +1,1782 @@
-// screens.jsx - All screen components for Biostat app
-const { useState, useMemo, useEffect } = React;
+// screens.jsx — all in-app screens
 
-// ============ Sidebar Nav ============
-window.Sidebar = function Sidebar({ active, onNav }) {
-  const items = [
-    { id: 'home',   no: '00', label: '儀表板' },
-    { id: 'lib',    no: '01', label: '主題庫' },
-    { id: 'concept',no: '02', label: '互動概念' },
-    { id: 'lab',    no: '03', label: '實驗室' },
-    { id: 'quiz',   no: '04', label: '練習測驗' },
-    { id: 'cheat',  no: '05', label: '速查卡片' },
-    { id: 'calc',   no: '06', label: '計算機' },
-    { id: 'case',   no: '07', label: '臨床情境' }
-  ];
-  return (
-    <aside className="sidebar">
-      <div className="sb-brand">
-        <div className="sb-mark">μ</div>
-        <div>
-          <div className="name">生物統計</div>
-          <div className="sub">Biostat · Lab</div>
-        </div>
-      </div>
-      <div className="sb-section">Learn</div>
-      <nav className="sb-nav">
-        {items.map(it => (
-          <button key={it.id}
-            className={`sb-item ${active === it.id ? 'active' : ''}`}
-            onClick={() => onNav(it.id)}>
-            <span className="sb-item-no">{it.no}</span>
-            <span>{it.label}</span>
-          </button>
-        ))}
-      </nav>
-      <div className="sb-streak">
-        <div className="row">
-          <div className="n">12</div>
-          <div className="label">連續天數</div>
-        </div>
-        <div className="dots">
-          {[1,1,1,1,1,1,0].map((on,i) => (
-            <div key={i} className={`dot ${on?'on':''}`} />
-          ))}
-        </div>
-      </div>
-    </aside>
+// ─────────── Course data ───────────
+const COURSES = [
+  // ── 基礎 ──
+  { id:'intro', title:'生資導論', sub:'bioinformatics 101', progress:1, lessons:5, color:'#0E9384', icon:'intro', group:'foundations',
+    units:[
+      { title:'什麼是生物資訊', done:true },
+      { title:'資料庫導覽 NCBI / Ensembl', done:true },
+      { title:'FASTA / FASTQ 格式', done:true },
+      { title:'常見檔案類型', done:true },
+      { title:'入門小測', done:true },
+    ]},
+  { id:'dna', title:'DNA · RNA · 蛋白質', sub:'central dogma', progress:0.72, lessons:8, color:'#0E9384', icon:'dna', group:'foundations',
+    units:[
+      { title:'核苷酸與雙股結構', done:true },
+      { title:'轉錄 Transcription', done:true },
+      { title:'轉譯 Translation', done:true },
+      { title:'密碼子表', done:true },
+      { title:'突變類型', done:true },
+      { title:'GC 含量與 Tm', done:true },
+      { title:'反向互補練習', done:false, active:true },
+      { title:'章節小測', done:false },
+    ]},
+  { id:'aln', title:'序列比對', sub:'pairwise & multiple', progress:0.4, lessons:6, color:'#4F94D8', icon:'aln', group:'foundations',
+    units:[
+      { title:'點陣圖 Dot plot', done:true },
+      { title:'動態規劃', done:true },
+      { title:'Needleman-Wunsch', done:false, active:true },
+      { title:'Smith-Waterman', done:false },
+      { title:'BLAST 入門', done:false },
+      { title:'多序列比對 MSA', done:false },
+    ]},
+
+  // ── 結構與功能 ──
+  { id:'protein', title:'蛋白質結構', sub:'structural biology', progress:0.25, lessons:7, color:'#D9594C', icon:'protein', group:'structure',
+    units:[
+      { title:'胺基酸性質與分類', done:true },
+      { title:'二級結構：α-helix / β-sheet', done:false, active:true },
+      { title:'三級摺疊', done:false },
+      { title:'PDB 資料庫導覽', done:false },
+      { title:'視覺化工具 PyMOL', done:false },
+      { title:'AlphaFold 預測原理', done:false },
+      { title:'章節小測', done:false },
+    ]},
+  { id:'ngs', title:'NGS · 次世代定序', sub:'next-gen sequencing', progress:0.15, lessons:7, color:'#EAA532', icon:'ngs', group:'structure',
+    units:[
+      { title:'Sanger vs NGS', done:true },
+      { title:'Illumina 化學原理', done:false, active:true },
+      { title:'長讀定序 PacBio / Nanopore', done:false },
+      { title:'Reads · Coverage · Depth', done:false },
+      { title:'品質控制 FastQC', done:false },
+      { title:'參考序列比對 BWA', done:false },
+      { title:'章節小測', done:false },
+    ]},
+  { id:'var', title:'變異與基因型', sub:'variant calling', progress:0, lessons:6, color:'#EAA532', icon:'var', group:'structure',
+    units:[
+      { title:'SNP / INDEL / SV', done:false },
+      { title:'VCF 格式', done:false },
+      { title:'GATK 流程簡介', done:false },
+      { title:'群體頻率 MAF', done:false },
+      { title:'臨床註解 ClinVar', done:false },
+      { title:'章節小測', done:false },
+    ]},
+
+  // ── 表現分析 ──
+  { id:'rnaseq', title:'基因表現 RNA-seq', sub:'expression analysis', progress:0, lessons:7, color:'#9C77C7', icon:'rnaseq', group:'expression',
+    units:[
+      { title:'從 reads 到 counts', done:false },
+      { title:'TPM / FPKM 標準化', done:false },
+      { title:'差異表現 DESeq2', done:false },
+      { title:'火山圖判讀', done:false },
+      { title:'GO 富集分析', done:false },
+      { title:'通路分析 KEGG', done:false },
+      { title:'章節小測', done:false },
+    ]},
+  { id:'sc', title:'單細胞 scRNA-seq', sub:'single-cell genomics', progress:0, lessons:6, color:'#9C77C7', icon:'sc', group:'expression',
+    units:[
+      { title:'10x Genomics 化學', done:false },
+      { title:'細胞 × 基因 矩陣', done:false },
+      { title:'QC 與雙細胞偵測', done:false },
+      { title:'降維 UMAP / t-SNE', done:false },
+      { title:'分群與細胞註解', done:false },
+      { title:'軌跡分析 Trajectory', done:false },
+    ]},
+
+  // ── 演化與群體 ──
+  { id:'phy', title:'系統發生樹', sub:'phylogenetics', progress:0, lessons:6, color:'#4FB37E', icon:'phy', group:'evolution',
+    units:[
+      { title:'演化距離', done:false },
+      { title:'UPGMA', done:false },
+      { title:'Neighbor Joining', done:false },
+      { title:'最大似然 ML', done:false },
+      { title:'Bootstrap 信心值', done:false },
+      { title:'樹的解讀', done:false },
+    ]},
+  { id:'pop', title:'群體遺傳學', sub:'population genetics', progress:0, lessons:5, color:'#4FB37E', icon:'pop', group:'evolution',
+    units:[
+      { title:'Hardy-Weinberg 平衡', done:false },
+      { title:'等位基因頻率', done:false },
+      { title:'Fst 與族群分化', done:false },
+      { title:'天擇與漂變', done:false },
+      { title:'章節小測', done:false },
+    ]},
+
+  // ── 程式與工具 ──
+  { id:'py', title:'Python for Biology', sub:'biopython', progress:0.1, lessons:8, color:'#4F94D8', icon:'py', group:'tools',
+    units:[
+      { title:'環境設置 conda', done:true },
+      { title:'讀寫 FASTA', done:false, active:true },
+      { title:'Biopython Seq 物件', done:false },
+      { title:'呼叫 BLAST', done:false },
+      { title:'解析 GenBank', done:false },
+      { title:'pandas 處理表格', done:false },
+      { title:'matplotlib 繪圖', done:false },
+      { title:'章節小測', done:false },
+    ]},
+  { id:'r', title:'R 與生統入門', sub:'R for biostatistics', progress:0, lessons:7, color:'#4F94D8', icon:'r', group:'tools',
+    units:[
+      { title:'R 與 Rstudio', done:false },
+      { title:'tidyverse 流程', done:false },
+      { title:'假設檢定 t-test', done:false },
+      { title:'多重檢定校正', done:false },
+      { title:'ggplot2 視覺化', done:false },
+      { title:'Bioconductor 套件', done:false },
+      { title:'章節小測', done:false },
+    ]},
+
+  // ── 進階 ──
+  { id:'ml', title:'生物機器學習', sub:'ML in biology', progress:0, lessons:6, color:'#A5318D', icon:'ml', group:'advanced', locked:true,
+    units:[
+      { title:'監督式 vs 非監督式', done:false },
+      { title:'特徵工程：序列編碼', done:false },
+      { title:'分類器：SVM / RF', done:false },
+      { title:'深度學習：CNN on DNA', done:false },
+      { title:'蛋白語言模型 ESM', done:false },
+      { title:'評估指標 ROC / PR', done:false },
+    ]},
+
+  // ── 表觀遺傳與調控 ──
+  { id:'epi', title:'表觀遺傳學', sub:'epigenetics', progress:0, lessons:5, color:'#0E9384', icon:'epi', group:'expression',
+    units:[
+      { title:'什麼是表觀遺傳', done:false },
+      { title:'DNA 甲基化', done:false },
+      { title:'組蛋白修飾', done:false },
+      { title:'ChIP-seq 入門', done:false },
+      { title:'ATAC-seq · 染色質可及性', done:false },
+    ]},
+
+  // ── 應用 ──
+  { id:'cancer', title:'癌症基因組學', sub:'cancer genomics', progress:0, lessons:6, color:'#D9594C', icon:'cancer', group:'applications',
+    units:[
+      { title:'Somatic vs Germline', done:false },
+      { title:'驅動 vs 乘客突變', done:false },
+      { title:'微衛星不穩定 MSI', done:false },
+      { title:'突變簽名 Mutational signatures', done:false },
+      { title:'拷貝數變異與融合基因', done:false },
+      { title:'TCGA 與 ICGC 資源', done:false },
+    ]},
+  { id:'microbe', title:'微生物群', sub:'microbiome', progress:0, lessons:5, color:'#4FB37E', icon:'microbe', group:'applications',
+    units:[
+      { title:'16S rRNA vs Shotgun', done:false },
+      { title:'ASV / OTU 與 DADA2', done:false },
+      { title:'α / β 多樣性', done:false },
+      { title:'物種註解 Kraken2', done:false },
+      { title:'功能註解 PICRUSt / HUMAnN', done:false },
+    ]},
+  { id:'crispr', title:'CRISPR 基因編輯', sub:'genome editing', progress:0, lessons:5, color:'#EAA532', icon:'crispr', group:'applications',
+    units:[
+      { title:'CRISPR-Cas9 工作原理', done:false },
+      { title:'gRNA 設計', done:false },
+      { title:'脫靶效應評估', done:false },
+      { title:'Base / Prime editing', done:false },
+      { title:'CRISPR screen 分析', done:false },
+    ]},
+  { id:'sys', title:'系統生物學', sub:'systems biology', progress:0, lessons:5, color:'#9C77C7', icon:'sys', group:'advanced',
+    units:[
+      { title:'從還原論到網路觀', done:false },
+      { title:'PPI 蛋白質交互作用網路', done:false },
+      { title:'基因調控網路', done:false },
+      { title:'GSEA 通路富集', done:false },
+      { title:'動力學模型與 ODE', done:false },
+    ]},
+  { id:'cloud', title:'雲端與工作流', sub:'cloud & workflow', progress:0, lessons:5, color:'#4F94D8', icon:'cloud', group:'tools',
+    units:[
+      { title:'為什麼需要工作流', done:false },
+      { title:'Snakemake / Nextflow', done:false },
+      { title:'Docker / Singularity 容器', done:false },
+      { title:'雲端運算 AWS / GCP', done:false },
+      { title:'可重現性與版本控制', done:false },
+    ]},
+];
+
+const COURSE_GROUPS = [
+  { id:'foundations', label:'基礎', en:'FOUNDATIONS' },
+  { id:'structure',   label:'結構與功能', en:'STRUCTURE & FUNCTION' },
+  { id:'expression',  label:'表現與調控', en:'EXPRESSION & REGULATION' },
+  { id:'evolution',   label:'演化與群體', en:'EVOLUTION' },
+  { id:'applications', label:'應用領域', en:'APPLICATIONS' },
+  { id:'tools',       label:'程式與工具', en:'TOOLS' },
+  { id:'advanced',    label:'進階', en:'ADVANCED' },
+];
+
+function CourseGlyph({ id, color, size=44 }){
+  const s = size;
+  if(id==='dna') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M14 10c0 8 16 8 16 12s-16 4-16 12" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M30 10c0 8-16 8-16 12s16 4 16 12" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M16 14h12M16 30h12M17 18h10M17 26h10" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity=".6"/>
+    </svg>
   );
-};
+  if(id==='aln') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <rect x="10" y="13" width="4" height="4" rx="1" fill={color}/>
+      <rect x="16" y="13" width="4" height="4" rx="1" fill={color}/>
+      <rect x="22" y="13" width="4" height="4" rx="1" fill={color} opacity=".3"/>
+      <rect x="28" y="13" width="4" height="4" rx="1" fill={color}/>
+      <rect x="10" y="27" width="4" height="4" rx="1" fill={color}/>
+      <rect x="16" y="27" width="4" height="4" rx="1" fill={color}/>
+      <rect x="22" y="27" width="4" height="4" rx="1" fill={color} opacity=".3"/>
+      <rect x="28" y="27" width="4" height="4" rx="1" fill={color}/>
+      <path d="M12 21h20" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 3" opacity=".5"/>
+    </svg>
+  );
+  if(id==='ngs') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M10 32V20M14 32V14M18 32V22M22 32V12M26 32V18M30 32V24M34 32V16" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+  if(id==='phy') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M12 22h6M18 14h8M18 30h8M26 14v0M26 22v0M26 30v0M26 14h6M26 22h6M26 30h6" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none"/>
+      <circle cx="12" cy="22" r="2" fill={color}/>
+      <circle cx="32" cy="14" r="2" fill={color}/>
+      <circle cx="32" cy="22" r="2" fill={color}/>
+      <circle cx="32" cy="30" r="2" fill={color}/>
+    </svg>
+  );
+  if(id==='ml') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <circle cx="14" cy="14" r="3" fill={color}/>
+      <circle cx="14" cy="30" r="3" fill={color}/>
+      <circle cx="30" cy="22" r="3" fill={color}/>
+      <path d="M17 14l10 7M17 30l10-7" stroke={color} strokeWidth="1.5"/>
+    </svg>
+  );
+  if(id==='intro') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M12 14a2 2 0 012-2h6v20h-6a2 2 0 01-2-2V14zM32 14a2 2 0 00-2-2h-6v20h6a2 2 0 002-2V14z" stroke={color} strokeWidth="1.7" fill="none" strokeLinejoin="round"/>
+      <path d="M16 18h2M16 22h2M26 18h2M26 22h2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+  if(id==='protein') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M11 22c0-3 3-5 6-3s5 6 8 5 5-4 8-3" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none"/>
+      <circle cx="11" cy="22" r="2" fill={color}/>
+      <circle cx="22" cy="24" r="2" fill={color}/>
+      <circle cx="33" cy="21" r="2" fill={color}/>
+      <path d="M14 30c2-2 6-1 8 0s5 1 7-1" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none" opacity=".5"/>
+    </svg>
+  );
+  if(id==='var') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <rect x="10" y="14" width="24" height="6" rx="1.5" stroke={color} strokeWidth="1.5" fill="none"/>
+      <rect x="10" y="24" width="24" height="6" rx="1.5" stroke={color} strokeWidth="1.5" fill="none"/>
+      <rect x="18" y="14" width="2.5" height="6" fill={color}/>
+      <rect x="26" y="24" width="2.5" height="6" fill={color}/>
+    </svg>
+  );
+  if(id==='rnaseq') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M10 32V12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+      <path d="M10 32h24" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="16" cy="26" r="1.5" fill={color} opacity=".5"/>
+      <circle cx="20" cy="22" r="1.5" fill={color} opacity=".5"/>
+      <circle cx="14" cy="18" r="2" fill={color}/>
+      <circle cx="28" cy="16" r="2" fill={color}/>
+      <circle cx="24" cy="24" r="1.5" fill={color} opacity=".5"/>
+      <circle cx="32" cy="22" r="1.5" fill={color} opacity=".5"/>
+      <path d="M22 32V12" stroke={color} strokeDasharray="2 3" strokeWidth="1" opacity=".5"/>
+    </svg>
+  );
+  if(id==='sc') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <circle cx="15" cy="16" r="2.5" fill={color}/>
+      <circle cx="20" cy="13" r="2" fill={color}/>
+      <circle cx="13" cy="22" r="1.8" fill={color}/>
+      <circle cx="29" cy="17" r="2.2" fill={color} opacity=".5"/>
+      <circle cx="32" cy="23" r="2" fill={color} opacity=".5"/>
+      <circle cx="27" cy="28" r="1.8" fill={color} opacity=".5"/>
+      <circle cx="17" cy="30" r="2" fill={color} opacity=".7"/>
+      <circle cx="22" cy="27" r="1.5" fill={color} opacity=".7"/>
+    </svg>
+  );
+  if(id==='pop') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <circle cx="15" cy="16" r="3" stroke={color} strokeWidth="1.5" fill="none"/>
+      <circle cx="22" cy="13" r="3" stroke={color} strokeWidth="1.5" fill="none"/>
+      <circle cx="29" cy="16" r="3" stroke={color} strokeWidth="1.5" fill="none"/>
+      <circle cx="15" cy="28" r="3" stroke={color} strokeWidth="1.5" fill="none"/>
+      <circle cx="22" cy="31" r="3" fill={color}/>
+      <circle cx="29" cy="28" r="3" stroke={color} strokeWidth="1.5" fill="none"/>
+    </svg>
+  );
+  if(id==='py') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M14 16l-4 6 4 6M30 16l4 6-4 6" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none"/>
+      <path d="M19 30l6-16" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+  if(id==='r') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M10 30c0-5 2-10 6-12s8 0 9 4-3 7-6 7" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none"/>
+      <path d="M19 29l5 5M22 22h6" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+  if(id==='epi') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M10 14h24M10 22h24M10 30h24" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity=".4"/>
+      {[14, 18, 26, 30].map((x,i)=>(
+        <circle key={i} cx={x} cy={[14,22,14,30][i]} r="2.5" fill={color}/>
+      ))}
+      <text x="22" y="40" textAnchor="middle" fontSize="6" fill={color} fontFamily="JetBrains Mono" fontWeight="700">CH₃</text>
+    </svg>
+  );
+  if(id==='cancer') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <circle cx="14" cy="14" r="4" stroke={color} strokeWidth="1.8" fill="none"/>
+      <circle cx="22" cy="22" r="5" fill={color}/>
+      <circle cx="30" cy="14" r="3.5" fill={color} opacity=".7"/>
+      <circle cx="32" cy="30" r="3" fill={color} opacity=".5"/>
+      <circle cx="14" cy="30" r="2.5" fill={color} opacity=".5"/>
+    </svg>
+  );
+  if(id==='microbe') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <ellipse cx="14" cy="16" rx="4" ry="2.5" fill={color} opacity=".7" transform="rotate(-20 14 16)"/>
+      <ellipse cx="28" cy="14" rx="4" ry="2.5" fill={color} opacity=".7" transform="rotate(15 28 14)"/>
+      <ellipse cx="20" cy="24" rx="3.5" ry="2" fill={color} opacity=".7" transform="rotate(40 20 24)"/>
+      <ellipse cx="30" cy="28" rx="4" ry="2.2" fill={color} opacity=".7" transform="rotate(-10 30 28)"/>
+      <ellipse cx="14" cy="30" rx="3" ry="2" fill={color} opacity=".7" transform="rotate(-30 14 30)"/>
+    </svg>
+  );
+  if(id==='crispr') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M10 14h24M10 30h24" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M22 14v16" stroke={color} strokeWidth="2" strokeDasharray="2 2"/>
+      <circle cx="22" cy="22" r="4" fill={color}/>
+      <text x="22" y="25" textAnchor="middle" fontSize="6" fill="#fff" fontFamily="JetBrains Mono" fontWeight="700">Cas</text>
+    </svg>
+  );
+  if(id==='sys') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <circle cx="14" cy="14" r="3" fill={color}/>
+      <circle cx="30" cy="14" r="3" fill={color}/>
+      <circle cx="22" cy="22" r="3" fill={color}/>
+      <circle cx="14" cy="30" r="3" fill={color}/>
+      <circle cx="30" cy="30" r="3" fill={color}/>
+      <path d="M14 14L22 22M30 14L22 22M22 22L14 30M22 22L30 30M14 14L30 14M14 30L30 30" stroke={color} strokeWidth="1" opacity=".4"/>
+    </svg>
+  );
+  if(id==='cloud') return (
+    <svg width={s} height={s} viewBox="0 0 44 44"><rect width="44" height="44" rx="12" fill={color} opacity=".12"/>
+      <path d="M14 26c-2 0-4-2-4-4s2-4 4-4c0-3 3-5 6-5s5 2 5 4c3-1 6 1 6 4s-3 5-6 5H14z" stroke={color} strokeWidth="1.8" fill="none" strokeLinejoin="round"/>
+      <path d="M16 32l1-2M22 32l1-2M28 32l1-2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+  return null;
+}
 
-// ============ Dashboard ============
-window.Dashboard = function Dashboard({ onOpenTopic, onNav }) {
-  const D = window.AppData;
-  // overall progress
-  const overall = D.topics.reduce((s, t) => s + t.progress, 0) / D.topics.length;
-  const C = 2 * Math.PI * 48;
-  const dash = C * overall;
-
-  // recommended = next incomplete with highest progress
-  const recommend = [...D.topics].sort((a, b) =>
-    b.progress > 0 && b.progress < 1
-      ? (b.progress - a.progress)
-      : 0
-  ).filter(t => t.progress > 0 && t.progress < 1)[0] || D.topics[0];
-
+// ─────────── Header (custom, not iOS large title) ───────────
+function AppHeader({ title, subtitle, dark=false, right=null, onBack=null }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb">2026 · 春季學習計畫</div>
-          <h1>早安，準備好繼續了嗎？</h1>
-          <div className="sub">今天還有 1 個未完成的任務 · 預計 20 分鐘</div>
-        </div>
-        <div className="row">
-          <button className="btn ghost sm">月度報告</button>
-          <button className="btn sm">開始今日</button>
-        </div>
-      </div>
-
-      <div className="dash-grid">
-        <div className="col">
-          {/* Hero */}
-          <div className="hero">
-            <div>
-              <div className="eyebrow">繼續上次的進度</div>
-              <h2>{recommend.zh} · {Math.round(recommend.progress*100)}% 完成</h2>
-              <p>上次學到「{recommend.blurb}」。再花 12 分鐘可完成本章節，並解鎖下一個練習集。</p>
-              <div className="row" style={{gap: 8}}>
-                <button className="btn accent" onClick={() => onOpenTopic && onOpenTopic(recommend.id)}>
-                  繼續學習 →
-                </button>
-                <button className="btn ghost" onClick={() => onNav && onNav('concept')}>互動模擬</button>
-              </div>
-            </div>
-            <svg className="ring" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="48" fill="none" stroke="var(--line)" strokeWidth="6" />
-              <circle cx="60" cy="60" r="48" fill="none"
-                stroke="var(--accent)" strokeWidth="6"
-                strokeDasharray={`${dash} ${C}`}
-                strokeLinecap="round"
-                transform="rotate(-90 60 60)" />
-              <text className="big" x="60" y="62" textAnchor="middle">{Math.round(overall*100)}%</text>
-              <text className="lbl" x="60" y="76" textAnchor="middle">OVERALL</text>
-            </svg>
+    <div style={{ padding:'calc(env(safe-area-inset-top, 0px) + 26px) 20px 14px', display:'flex', alignItems:'flex-end', justifyContent:'space-between', gap:12 }}>
+      <div style={{ flex:1, minWidth:0 }}>
+        {onBack && (
+          <button onClick={onBack} style={{
+            background:'transparent', border:'none', color:'var(--accent)',
+            fontSize:13, padding:0, marginBottom:6, cursor:'pointer',
+            display:'flex', alignItems:'center', gap:4, fontFamily:'Manrope',
+          }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            返回
+          </button>
+        )}
+        {subtitle && (
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'var(--accent)', letterSpacing:1.4, marginBottom:4 }}>
+            {subtitle}
           </div>
-
-          {/* Stats */}
-          <div className="stat-row">
-            <div className="stat">
-              <div className="k">本週時數</div>
-              <div className="v">4.2<span style={{fontSize:14, color:'var(--ink-3)'}}>h</span></div>
-              <div className="d">+38% vs 上週</div>
-            </div>
-            <div className="stat">
-              <div className="k">完成卡片</div>
-              <div className="v">87</div>
-              <div className="d">總共 142 張</div>
-            </div>
-            <div className="stat">
-              <div className="k">測驗正確率</div>
-              <div className="v">78<span style={{fontSize:14, color:'var(--ink-3)'}}>%</span></div>
-              <div className="d">過去 30 題</div>
-            </div>
-            <div className="stat">
-              <div className="k">熟練主題</div>
-              <div className="v">3<span style={{fontSize:14, color:'var(--ink-3)'}}>/9</span></div>
-              <div className="d">≥ 80% 完成</div>
-            </div>
-          </div>
-
-          {/* Continue learning */}
-          <div className="card">
-            <div className="card-head">
-              <h3>繼續學習</h3>
-              <span className="meta">最近 · 3</span>
-            </div>
-            <div className="col" style={{gap: 8}}>
-              {D.topics.filter(t => t.progress > 0 && t.progress < 1).slice(0, 3).map(t => (
-                <div key={t.id} className="topic-card" onClick={() => onOpenTopic && onOpenTopic(t.id)}>
-                  <span className="no">{t.no}</span>
-                  <div className="titles">
-                    <div className="zh">{t.zh}</div>
-                    <div className="en">{t.en} · {t.lessons} lessons</div>
-                  </div>
-                  <div className="right">
-                    <div className="pct">{Math.round(t.progress*100)}%</div>
-                    <div style={{marginTop:4, width: 80}}>
-                      <div className="progress"><i style={{width: `${t.progress*100}%`}} /></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Activity */}
-          <div className="card">
-            <div className="card-head">
-              <h3>本週活動</h3>
-              <span className="meta">分鐘 / 天</span>
-            </div>
-            <div className="activity" style={{marginBottom: 22}}>
-              {D.activity.map((a, i) => {
-                const h = Math.max(4, (a.mins / 60) * 80);
-                const today = i === 5;
-                return (
-                  <div key={a.day} className={`bar ${today ? 'today' : ''}`} style={{height: h}}>
-                    <span className="lbl">{a.day}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="col">
-          {/* Agenda */}
-          <div className="card">
-            <div className="card-head">
-              <h3>學習行事曆</h3>
-              <span className="meta">本週</span>
-            </div>
-            {D.agenda.map((it, i) => (
-              <div key={i} className={`agenda-item ${it.done ? 'done' : ''}`}>
-                <div className="check">
-                  {it.done && (
-                    <svg width="10" height="10" viewBox="0 0 10 10">
-                      <path d="M2 5l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <div className="title">{it.title}</div>
-                  <div className="meta">{it.time}</div>
-                </div>
-                <div className="dur">{it.dur}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Daily card */}
-          <div className="card" style={{background: 'var(--accent-soft)', borderColor: 'transparent'}}>
-            <div className="card-head">
-              <h3 style={{color:'var(--accent-ink)'}}>每日一題</h3>
-              <span className="meta" style={{color:'var(--accent-ink)', opacity:.7}}>Day 12</span>
-            </div>
-            <p style={{margin: '0 0 14px', fontSize: 13, color:'var(--accent-ink)', lineHeight: 1.55}}>
-              一個檢定的 p-value = 0.03，下列何者是<strong>錯誤</strong>的詮釋？
-            </p>
-            <button className="btn accent" onClick={() => onNav && onNav('quiz')}>挑戰今日題 →</button>
-          </div>
-
-          {/* mini cheat */}
-          <div className="card">
-            <div className="card-head">
-              <h3>速查重點</h3>
-              <span className="meta">隨機</span>
-            </div>
-            <div className="fx" style={{marginBottom: 10}}>
-              SE = s / √n
-            </div>
-            <div style={{fontSize: 12, color:'var(--ink-3)', lineHeight: 1.55}}>
-              標準誤 = 標準差除以樣本數平方根。它描述「樣本平均」這個估計量的不確定性，不是個別觀測值的離散度。
-            </div>
-          </div>
+        )}
+        <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontSize:24, fontWeight:600, color:fg, letterSpacing:-.5, lineHeight:1.2 }}>
+          {title}
         </div>
       </div>
+      {right}
     </div>
   );
-};
+}
 
-// ============ Library ============
-window.Library = function Library({ onOpenTopic }) {
-  const D = window.AppData;
-  const [filter, setFilter] = useState('all');
-  const tags = [
-    { id: 'all', label: '全部', count: D.topics.length },
-    { id: '基礎', label: '基礎' },
-    { id: '推論', label: '推論' },
-    { id: '建模', label: '建模' },
-    { id: '進階', label: '進階' },
-    { id: '臨床', label: '臨床' }
+// ─────────── Tab bar ───────────
+function TabBar({ tab, setTab, dark=false }){
+  const tabs = [
+    { id:'home', label:'首頁', icon:(c)=>(<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 10l8-7 8 7v8a2 2 0 01-2 2h-3v-6H8v6H5a2 2 0 01-2-2v-8z" stroke={c} strokeWidth="1.7" strokeLinejoin="round"/></svg>) },
+    { id:'courses', label:'課程', icon:(c)=>(<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 5a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke={c} strokeWidth="1.7"/><path d="M7 8h8M7 11h8M7 14h5" stroke={c} strokeWidth="1.7" strokeLinecap="round"/></svg>) },
+    { id:'practice', label:'練習', icon:(c)=>(<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke={c} strokeWidth="1.7"/><path d="M11 6v5l3 2" stroke={c} strokeWidth="1.7" strokeLinecap="round"/></svg>) },
+    { id:'me', label:'我的', icon:(c)=>(<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="3.5" stroke={c} strokeWidth="1.7"/><path d="M4 19c0-3.5 3.5-6 7-6s7 2.5 7 6" stroke={c} strokeWidth="1.7" strokeLinecap="round"/></svg>) },
   ];
-  const list = filter === 'all' ? D.topics : D.topics.filter(t => t.tag === filter);
+
+  const bg = dark?'rgba(20,22,18,.85)':'rgba(250,250,247,.92)';
+  const border = dark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)';
+  const muted = dark?'#74766E':'#9C9C8F';
+  const active = 'var(--accent)';
 
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb">Library · 9 topics</div>
-          <h1>主題庫</h1>
-          <div className="sub">從描述統計到 Cox 比例風險。每個主題包含概念、互動、練習、計算工具。</div>
-        </div>
-        <div className="row">
-          <button className="btn ghost sm">排序</button>
-          <button className="btn sm">+ 新增筆記</button>
-        </div>
-      </div>
-
-      <div className="row" style={{flexWrap: 'wrap', gap: 8, marginBottom: 18}}>
-        {tags.map(t => (
-          <button key={t.id}
-            className={`chip ${filter === t.id ? '' : 'ghost'}`}
-            style={{cursor:'pointer', border: 'none', padding:'6px 12px', fontSize: 12}}
-            onClick={() => setFilter(t.id)}>
-            {t.label} {t.count && <span style={{opacity:.5, marginLeft: 4}}>{t.count}</span>}
-          </button>
-        ))}
-      </div>
-
-      <div className="lib-grid">
-        {list.map(t => (
-          <div key={t.id} className="lib-card" onClick={() => onOpenTopic && onOpenTopic(t.id)}>
-            <div className="top">
-              <div>
-                <div className="num">CH {t.no}</div>
-              </div>
-              <span className={`chip ${t.tagColor}`}>{t.tag}</span>
+    <div style={{
+      position:'absolute', left:8, right:8, bottom:'calc(env(safe-area-inset-bottom, 0px) + 12px)', height:64,
+      background:bg, backdropFilter:'blur(20px) saturate(180%)', WebkitBackdropFilter:'blur(20px) saturate(180%)',
+      border:`1px solid ${border}`, borderRadius:24,
+      display:'flex', alignItems:'center', padding:'0 6px',
+      boxShadow: dark?'0 8px 24px rgba(0,0,0,.4)':'0 8px 24px rgba(15,22,20,.08)',
+      zIndex:100,
+    }}>
+      {tabs.map(t=>{
+        const isActive = tab===t.id;
+        return (
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            data-screen-label={t.label}
+            style={{
+              flex:1, background:'transparent', border:'none', cursor:'pointer',
+              padding:'8px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+              color: isActive?active:muted,
+              fontFamily:'Manrope, Noto Sans TC', fontSize:10, fontWeight:600,
+            }}>
+            <div style={{
+              padding:'4px 14px', borderRadius:99,
+              background: isActive?'var(--accent-soft)':'transparent',
+              transition:'all .2s',
+            }}>
+              {t.icon(isActive?active:muted)}
             </div>
-            <h3>{t.zh}</h3>
-            <div className="en">{t.en}</div>
-            <div className="blurb">{t.blurb}</div>
-            <div className="kw">
-              {t.keywords.map((k, i) => <span key={i}>{k}</span>)}
-            </div>
-            <div className="foot">
-              <span>{t.lessons} lessons · {t.time} min</span>
-              <span className="diff">
-                {[1,2,3].map(i => <i key={i} className={i <= t.difficulty ? 'on' : ''} />)}
-              </span>
-            </div>
-            <div className="foot" style={{marginTop: 8}}>
-              <div className="progress"><i style={{width: `${t.progress*100}%`}} /></div>
-              <span className="pct">{Math.round(t.progress*100)}%</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ============ Concept Page ============
-window.ConceptPage = function ConceptPage({ chartStyle = 'curve' }) {
-  const [dist, setDist] = useState('normal');
-  // Normal params
-  const [mu, setMu] = useState(0);
-  const [sigma, setSigma] = useState(1);
-  const [lo, setLo] = useState(-1.96);
-  const [hi, setHi] = useState(1.96);
-  // Binomial
-  const [n, setN] = useState(20);
-  const [p, setP] = useState(0.4);
-  // Poisson
-  const [lambda, setLambda] = useState(4);
-
-  const prob = (window.Stats.normCDF(hi, mu, sigma) - window.Stats.normCDF(lo, mu, sigma)) * 100;
-
-  const distInfo = {
-    normal: {
-      title: '常態分布',
-      en: 'Normal · Gaussian',
-      formula: 'X ~ N(μ, σ²)    f(x) = (1/σ√2π) · exp(−(x−μ)²/2σ²)',
-      note: '中央極限定理保證樣本平均隨樣本數增加而趨近常態。生物醫學中最常見的連續分布。'
-    },
-    binomial: {
-      title: '二項分布',
-      en: 'Binomial',
-      formula: 'X ~ Bin(n, p)    P(X=k) = C(n,k) · pᵏ · (1−p)ⁿ⁻ᵏ',
-      note: 'n 個獨立伯努利試驗中「成功」次數。例：n 位受試者中療效有效者人數。'
-    },
-    poisson: {
-      title: '卜瓦松分布',
-      en: 'Poisson',
-      formula: 'X ~ Pois(λ)    P(X=k) = e⁻λ · λᵏ / k!',
-      note: '單位時間／空間內罕見事件次數。例：單日急診來院數、每千人年發生率。'
-    }
-  };
-
-  return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb">02 · Interactive Concepts</div>
-          <h1>機率分布實驗室</h1>
-          <div className="sub">拖動滑桿改變參數，即時觀察分布形狀與機率質量。</div>
-        </div>
-      </div>
-
-      <div className="tabs">
-        {[
-          { id: 'normal', label: '常態 Normal' },
-          { id: 'binomial', label: '二項 Binomial' },
-          { id: 'poisson', label: '卜瓦松 Poisson' }
-        ].map(t => (
-          <button key={t.id}
-            className={`tab ${dist === t.id ? 'active' : ''}`}
-            onClick={() => setDist(t.id)}>
             {t.label}
           </button>
-        ))}
-      </div>
-
-      <div className="concept-grid">
-        <div className="plot-wrap">
-          <h2>{distInfo[dist].title}</h2>
-          <div className="meta">{distInfo[dist].en}</div>
-          <div className="fx" style={{marginBottom: 18}}>{distInfo[dist].formula}</div>
-
-          {dist === 'normal' && (
-            <window.NormalPlot mu={mu} sigma={sigma} lo={lo} hi={hi} chartStyle={chartStyle} />
-          )}
-          {dist === 'binomial' && <window.BinomialPlot n={n} p={p} />}
-          {dist === 'poisson' && <window.PoissonPlot lambda={lambda} />}
-        </div>
-
-        <div className="col">
-          <div className="card">
-            <div className="card-head">
-              <h3>參數控制</h3>
-              <span className="meta">live</span>
-            </div>
-            <div className="controls">
-              {dist === 'normal' && (
-                <>
-                  <div className="ctrl">
-                    <label>μ (平均) <span className="val">{mu.toFixed(2)}</span></label>
-                    <input type="range" min="-3" max="3" step="0.1" value={mu}
-                      onChange={e => setMu(+e.target.value)} />
-                  </div>
-                  <div className="ctrl">
-                    <label>σ (標準差) <span className="val">{sigma.toFixed(2)}</span></label>
-                    <input type="range" min="0.3" max="3" step="0.1" value={sigma}
-                      onChange={e => setSigma(+e.target.value)} />
-                  </div>
-                  <div className="ctrl">
-                    <label>下界 a <span className="val">{lo.toFixed(2)}</span></label>
-                    <input type="range" min="-5" max="5" step="0.05" value={lo}
-                      onChange={e => setLo(Math.min(+e.target.value, hi - 0.1))} />
-                  </div>
-                  <div className="ctrl">
-                    <label>上界 b <span className="val">{hi.toFixed(2)}</span></label>
-                    <input type="range" min="-5" max="5" step="0.05" value={hi}
-                      onChange={e => setHi(Math.max(+e.target.value, lo + 0.1))} />
-                  </div>
-                </>
-              )}
-              {dist === 'binomial' && (
-                <>
-                  <div className="ctrl">
-                    <label>n (試驗數) <span className="val">{n}</span></label>
-                    <input type="range" min="2" max="60" step="1" value={n}
-                      onChange={e => setN(+e.target.value)} />
-                  </div>
-                  <div className="ctrl">
-                    <label>p (成功率) <span className="val">{p.toFixed(2)}</span></label>
-                    <input type="range" min="0.05" max="0.95" step="0.01" value={p}
-                      onChange={e => setP(+e.target.value)} />
-                  </div>
-                </>
-              )}
-              {dist === 'poisson' && (
-                <div className="ctrl">
-                  <label>λ (速率) <span className="val">{lambda.toFixed(1)}</span></label>
-                  <input type="range" min="0.5" max="20" step="0.1" value={lambda}
-                    onChange={e => setLambda(+e.target.value)} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-head">
-              <h3>即時讀數</h3>
-              <span className="meta">summary</span>
-            </div>
-            {dist === 'normal' && (
-              <div className="readout">
-                <div className="b">
-                  <div className="k">P(a ≤ X ≤ b)</div>
-                  <div className="v">{prob.toFixed(2)}%</div>
-                </div>
-                <div className="b">
-                  <div className="k">μ</div>
-                  <div className="v">{mu.toFixed(2)}</div>
-                </div>
-                <div className="b">
-                  <div className="k">σ²</div>
-                  <div className="v">{(sigma*sigma).toFixed(2)}</div>
-                </div>
-                <div className="b">
-                  <div className="k">2.5%–97.5%</div>
-                  <div className="v" style={{fontSize: 13}}>
-                    [{(mu - 1.96*sigma).toFixed(2)}, {(mu + 1.96*sigma).toFixed(2)}]
-                  </div>
-                </div>
-              </div>
-            )}
-            {dist === 'binomial' && (
-              <div className="readout">
-                <div className="b"><div className="k">E[X]</div><div className="v">{(n*p).toFixed(2)}</div></div>
-                <div className="b"><div className="k">Var</div><div className="v">{(n*p*(1-p)).toFixed(2)}</div></div>
-                <div className="b"><div className="k">SD</div><div className="v">{Math.sqrt(n*p*(1-p)).toFixed(2)}</div></div>
-                <div className="b"><div className="k">P(X = E[X])</div><div className="v">
-                  {(window.Stats.binomPMF(Math.round(n*p), n, p)*100).toFixed(1)}%
-                </div></div>
-              </div>
-            )}
-            {dist === 'poisson' && (
-              <div className="readout">
-                <div className="b"><div className="k">E[X] = Var</div><div className="v">{lambda.toFixed(1)}</div></div>
-                <div className="b"><div className="k">P(X = 0)</div>
-                  <div className="v">{(Math.exp(-lambda)*100).toFixed(2)}%</div>
-                </div>
-                <div className="b"><div className="k">P(X ≥ 1)</div>
-                  <div className="v">{((1-Math.exp(-lambda))*100).toFixed(1)}%</div>
-                </div>
-                <div className="b"><div className="k">Mode</div>
-                  <div className="v">{Math.floor(lambda)}</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="side-note">
-            <h4>學習提示</h4>
-            <p>{distInfo[dist].note}</p>
-          </div>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
-};
+}
 
-// ============ Quiz ============
-window.QuizPage = function QuizPage({ difficulty = 2 }) {
-  const D = window.AppData;
-  const bank = window.QuizBank || [];
-  const [mode, setMode] = useState('start');
-  const [topicF, setTopicF] = useState('all');
-  const [diffF, setDiffF] = useState('all');
-  const [count, setCount] = useState(10);
-  const [session, setSession] = useState([]);
-  const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState([]);
-  const [recorded, setRecorded] = useState(false);
+// ─────────── Home screen ───────────
+function HomeScreen({ dark, openCourse, openTool, streak, showStreak }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
 
-  const q = session[idx];
-  const cur = answers[idx] || { value: null, revealed: false };
-  const total = session.length;
-  const topics = ['all', ...new Set(bank.map(q => q.topic))];
-
-  const start = () => {
-    const s = window.buildQuizSession({ topic: topicF, difficulty: diffF, count });
-    if (s.length === 0) return;
-    setSession(s);
-    setAnswers(s.map(() => ({ value: null, revealed: false })));
-    setIdx(0); setMode('session'); setRecorded(false);
-  };
-
-  const startWrongOnly = () => {
-    const wrong = window.QuizStats.getWrongQuestions();
-    if (wrong.length === 0) return;
-    const s = wrong.slice(0, count).map(w => w.q);
-    setSession(s);
-    setAnswers(s.map(() => ({ value: null, revealed: false })));
-    setIdx(0); setMode('session'); setRecorded(false);
-  };
-
-  const recordIfDone = () => {
-    if (mode === 'done' && session.length > 0 && !recorded) {
-      const items = session.map((q, i) => ({
-        q, value: answers[i].value,
-        correct: window.isQuizCorrect(q, answers[i].value)
-      }));
-      window.QuizStats.recordSession(items);
-      setRecorded(true);
-    }
-  };
-  const updateAnswer = (val) => setAnswers(a => a.map((x, i) => i === idx ? { ...x, value: val } : x));
-  const submit = () => {
-    if (!window.isQuizAnswered(q, cur.value)) return;
-    setAnswers(a => a.map((x, i) => i === idx ? { ...x, revealed: true } : x));
-  };
-  const next = () => { if (idx + 1 < total) setIdx(idx + 1); else setMode('done'); };
-  const restart = () => { setMode('start'); setSession([]); setAnswers([]); setIdx(0); setRecorded(false); };
-
-  const correct = answers.filter((a, i) => session[i] && window.isQuizCorrect(session[i], a.value)).length;
-  const answered = answers.filter(a => a.revealed).length;
-
-  // === Start screen ===
-  if (mode === 'start') {
-    const filteredCount = bank.filter(q =>
-      (topicF === 'all' || q.topic === topicF) &&
-      (diffF === 'all' || q.difficulty === diffF)
-    ).length;
-    const summary = window.QuizStats.getSummary();
-    const suggestions = window.QuizStats.getReviewSuggestions();
-    const wrongList = window.QuizStats.getWrongQuestions();
-    const history = window.QuizStats.getRecentHistory(7);
-
-    return (
-      <div>
-        <div className="page-head">
-          <div>
-            <div className="crumb">04 · Practice · {bank.length} 題庫存</div>
-            <h1>練習測驗</h1>
-            <div className="sub">混合題型：單選、複選、是非、數值計算。所有題目附解析與進度追蹤。</div>
-          </div>
-          {summary.answered > 0 && (
-            <button className="btn ghost sm"
-              onClick={() => {
-                if (confirm('清除所有進度紀錄？')) {
-                  window.QuizStats.resetAll();
-                  setRecorded(false);
-                  setMode('start');
-                }
-              }}>清除進度</button>
-          )}
-        </div>
-
-        {/* Stats row (only after first session) */}
-        {summary.answered > 0 && (
-          <div className="stat-row" style={{marginBottom: 16}}>
-            <div className="stat">
-              <div className="k">累積正確率</div>
-              <div className="v" style={{color: summary.accuracy >= 0.75 ? 'var(--good)' : summary.accuracy >= 0.6 ? 'var(--accent)' : 'var(--warn)'}}>
-                {(summary.accuracy*100).toFixed(0)}<span style={{fontSize:14, color:'var(--ink-3)'}}>%</span>
+  return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader
+        dark={dark}
+        subtitle="2026 / 06 / 06 · FRI"
+        title={<>解開生命的密碼 🧬<br/>從一段 DNA 開始</>}
+        right={
+          showStreak && (
+            <div style={{
+              padding:'10px 14px', borderRadius:14,
+              background: dark?'rgba(255,165,50,.08)':'rgba(234,165,50,.12)',
+              border: `1px solid ${dark?'rgba(255,165,50,.18)':'rgba(234,165,50,.3)'}`,
+              display:'flex', alignItems:'center', gap:8,
+            }}>
+              <span style={{ fontSize:18 }}>🔥</span>
+              <div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:9, color:muted, letterSpacing:.8 }}>STREAK</div>
+                <div style={{ fontFamily:'Space Grotesk', fontWeight:700, fontSize:16, color:fg }}>{streak}天</div>
               </div>
-              <div className="d">{summary.correct} / {summary.answered} 題</div>
             </div>
-            <div className="stat">
-              <div className="k">完成 Session</div>
-              <div className="v">{summary.sessions}</div>
-              <div className="d">次練習</div>
-            </div>
-            <div className="stat">
-              <div className="k">待複習錯題</div>
-              <div className="v" style={{color: wrongList.length > 0 ? 'var(--bad)' : 'var(--ink-3)'}}>
-                {wrongList.length}
-              </div>
-              <div className="d">過去答錯</div>
-            </div>
-            <div className="stat">
-              <div className="k">熟練主題</div>
-              <div className="v">{suggestions.filter(s => s.rate >= 0.8).length}<span style={{fontSize:14, color:'var(--ink-3)'}}>/{suggestions.length}</span></div>
-              <div className="d">≥ 80% 正確率</div>
-            </div>
-          </div>
-        )}
+          )
+        }
+      />
 
-        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 920, marginBottom: 16}}>
-          <div className="card">
-            <div className="card-head"><h3>選擇主題</h3>
-              <span className="meta">{topicF === 'all' ? '全部' : topicF}</span></div>
-            <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
-              {topics.map(t => {
-                const lbl = t === 'all' ? '全部' : (D.topics.find(x => x.id === t)?.zh || t);
-                return (
-                  <button key={t}
-                    className={`chip ${topicF === t ? '' : 'ghost'}`}
-                    style={{cursor: 'pointer', border: 'none', padding: '5px 10px', fontSize: 12}}
-                    onClick={() => setTopicF(t)}>{lbl}</button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-head"><h3>難度與題數</h3></div>
-            <div style={{fontSize: 12, color: 'var(--ink-3)', marginBottom: 6}}>難度</div>
-            <div className="iv-pills" style={{marginBottom: 14}}>
-              {[['all','全部'],[1,'入門'],[2,'標準'],[3,'進階']].map(([v, l]) => (
-                <button key={v} className={`iv-pill ${diffF === v ? 'on' : ''}`}
-                  onClick={() => setDiffF(v)}>{l}</button>
-              ))}
-            </div>
-
-            <div style={{fontSize: 12, color: 'var(--ink-3)', marginBottom: 6}}>題數</div>
-            <div className="iv-pills">
-              {[5, 10, 20, filteredCount].map((c, i) => (
-                <button key={i} className={`iv-pill ${count === c ? 'on' : ''}`}
-                  onClick={() => setCount(c)}>
-                  {i === 3 ? `全部 ${filteredCount}` : c}
-                </button>
-              ))}
-            </div>
-
-            <button className="btn accent" style={{width: '100%', marginTop: 14, justifyContent: 'center'}}
-              onClick={start} disabled={filteredCount === 0}>
-              開始 {Math.min(count, filteredCount)} 題練習 →
-            </button>
-          </div>
-        </div>
-
-        {/* Wrong-only + suggestions side by side */}
-        {(wrongList.length > 0 || suggestions.length > 0) && (
-          <div style={{display: 'grid', gridTemplateColumns: wrongList.length > 0 ? '1fr 1.4fr' : '1fr', gap: 16, maxWidth: 920, marginBottom: 16}}>
-            {wrongList.length > 0 && (
-              <div className="card" style={{
-                background: 'oklch(0.96 0.04 25 / 0.6)',
-                borderColor: 'oklch(0.85 0.08 25 / 0.5)',
-                color: 'oklch(0.36 0.10 25)'
-              }}>
-                <div className="card-head">
-                  <h3 style={{color: 'inherit'}}>待複習錯題</h3>
-                  <span className="meta" style={{color: 'inherit', opacity: 0.7}}>{wrongList.length} 題</span>
-                </div>
-                <p style={{fontSize: 12.5, lineHeight: 1.6, margin: '0 0 12px'}}>
-                  錯題會累積在這裡。挑戰錯題模式只抽你過去答錯的題目，幫助鞏固弱項。
-                </p>
-                <div style={{display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14}}>
-                  {wrongList.slice(0, 3).map((w, i) => {
-                    const t = D.topics.find(x => x.id === w.topic);
-                    return (
-                      <div key={i} style={{
-                        background: 'rgba(255,255,255,0.5)',
-                        borderRadius: 8, padding: '8px 10px',
-                        display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 8,
-                        alignItems: 'center', fontSize: 12
-                      }}>
-                        <span className={`chip ${t?.tagColor || 'mint'}`} style={{fontSize: 10, padding: '2px 6px'}}>
-                          {t?.zh || w.topic}
-                        </span>
-                        <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-                          {w.q.stem.replace(/\*\*(.+?)\*\*/g, '$1')}
-                        </span>
-                        <span style={{fontFamily: 'var(--f-mono)', fontSize: 10, opacity: 0.7}}>
-                          ×{w.count}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {wrongList.length > 3 && (
-                    <div style={{fontSize: 11, opacity: 0.7, fontStyle: 'italic'}}>
-                      ⋯ 還有 {wrongList.length - 3} 題
-                    </div>
-                  )}
-                </div>
-                <button className="btn" onClick={startWrongOnly}
-                  style={{background: 'oklch(0.36 0.10 25)', color: 'white'}}>
-                  挑戰錯題 →
-                </button>
-              </div>
-            )}
-
-            {suggestions.length > 0 && (
-              <div className="card">
-                <div className="card-head">
-                  <h3>建議複習主題</h3>
-                  <span className="meta">依正確率排序</span>
-                </div>
-                <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-                  {suggestions.slice(0, 5).map(s => {
-                    const t = D.topics.find(x => x.id === s.topic);
-                    return (
-                      <button key={s.topic}
-                        onClick={() => setTopicF(s.topic)}
-                        style={{
-                          background: topicF === s.topic ? 'color-mix(in oklch, var(--ink) 4%, var(--bg))' : 'var(--bg)',
-                          border: '1px solid var(--line)',
-                          borderRadius: 10, padding: '10px 12px',
-                          display: 'grid', gridTemplateColumns: '1fr 100px 50px', gap: 12,
-                          alignItems: 'center', textAlign: 'left',
-                          fontFamily: 'inherit', cursor: 'pointer',
-                          color: 'inherit'
-                        }}>
-                        <div>
-                          <div style={{fontWeight: 600, fontSize: 13}}>{t?.zh || s.topic}</div>
-                          <div style={{fontFamily: 'var(--f-mono)', fontSize: 10.5, color: 'var(--ink-3)', marginTop: 2}}>
-                            {s.correct} / {s.answered} 題
-                          </div>
-                        </div>
-                        <div className="progress"><i style={{
-                          width: `${s.rate*100}%`,
-                          background: s.rate >= 0.75 ? 'var(--good)' : s.rate >= 0.6 ? 'var(--accent)' : 'var(--warn)'
-                        }} /></div>
-                        <span style={{
-                          fontFamily: 'var(--f-mono)', fontSize: 13, fontWeight: 600, textAlign: 'right',
-                          color: s.rate >= 0.75 ? 'var(--good)' : s.rate >= 0.6 ? 'var(--ink)' : 'var(--bad)'
-                        }}>{Math.round(s.rate*100)}%</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Recent activity */}
-        {history.length > 0 && (
-          <div className="card" style={{maxWidth: 920}}>
-            <div className="card-head">
-              <h3>近期表現</h3>
-              <span className="meta">最近 {history.length} 次</span>
-            </div>
-            <div className="activity" style={{height: 80, marginBottom: 22}}>
-              {history.map((h, i) => {
-                const pct = h.total > 0 ? h.correct / h.total : 0;
-                return (
-                  <div key={i} className="bar" style={{
-                    height: Math.max(8, pct * 80),
-                    background: pct >= 0.75 ? 'var(--good)' : pct >= 0.6 ? 'var(--accent)' : 'var(--warn)'
-                  }}>
-                    <span className="lbl">{Math.round(pct*100)}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // === Done screen ===
-  if (mode === 'done') {
-    recordIfDone();
-    const pct = total > 0 ? Math.round(correct / total * 100) : 0;
-    const rank = pct >= 90 ? '優秀' : pct >= 75 ? '良好' : pct >= 60 ? '中等' : '需加強';
-    return (
-      <div>
-        <div className="page-head">
-          <div>
-            <div className="crumb">Session 結束 · {rank}</div>
-            <h1>練習完成</h1>
-          </div>
-          <div className="row">
-            <button className="btn ghost sm" onClick={restart}>新測驗</button>
-            <button className="btn sm" onClick={() => {
-              const s = window.buildQuizSession({ topic: topicF, difficulty: diffF, count });
-              setSession(s);
-              setAnswers(s.map(() => ({ value: null, revealed: false })));
-              setIdx(0); setMode('session');
-            }}>再來一次</button>
-          </div>
-        </div>
-
-        <div style={{
-          background: 'var(--ink)', color: 'var(--bg)',
-          borderRadius: 22, padding: 32, textAlign: 'center',
-          maxWidth: 880, marginBottom: 16
+      {/* Today's challenge */}
+      <div style={{ padding:'0 20px', marginTop:8 }}>
+        <div onClick={()=>openTool('quiz')} style={{
+          borderRadius:20, padding:'18px 18px 16px',
+          background:'linear-gradient(135deg, var(--accent) 0%, #6CD0A5 120%)',
+          color:'#fff', position:'relative', overflow:'hidden',
+          cursor:'pointer',
+          boxShadow:'0 8px 24px rgba(14,147,132,.25)',
         }}>
-          <div style={{fontFamily:'var(--f-mono)', fontSize: 11, opacity: 0.6,
-            letterSpacing: '0.15em', textTransform: 'uppercase'}}>正確率</div>
-          <div style={{fontFamily:'var(--f-mono)', fontSize: 72, fontWeight: 600,
-            letterSpacing: '-0.03em', margin: '4px 0 4px',
-            color: pct >= 90 ? 'var(--good)' : pct >= 60 ? 'var(--accent)' : 'var(--warn)'}}>
-            {pct}%
+          {/* deco helix */}
+          <svg width="120" height="160" viewBox="0 0 120 160" style={{ position:'absolute', right:-20, top:-10, opacity:.18 }}>
+            <path d="M20 10c0 30 80 30 80 60s-80 30-80 60" stroke="#fff" strokeWidth="2" fill="none"/>
+            <path d="M100 10c0 30-80 30-80 60s80 30 80 60" stroke="#fff" strokeWidth="2" fill="none"/>
+            {[0,25,50,75,100,125].map((y,i)=>(
+              <line key={i} x1="22" y1={20+y} x2="98" y2={20+y} stroke="#fff" strokeWidth="1.5"/>
+            ))}
+          </svg>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:1.4, opacity:.8 }}>
+            DAILY · 跨章節 8 題
           </div>
-          <div style={{fontSize: 15, opacity: 0.8}}>{correct} / {total} 題正確</div>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontSize:22, fontWeight:600, marginTop:6, letterSpacing:-.3 }}>
+            今日挑戰
+          </div>
+          <div style={{ fontFamily:'Noto Sans TC, Manrope', fontSize:13, opacity:.92, marginTop:4 }}>
+            轉錄、轉譯、BLAST 顯著性
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:14 }}>
+            <div style={{
+              padding:'6px 12px', background:'rgba(255,255,255,.2)', borderRadius:99,
+              fontSize:12, fontWeight:600, backdropFilter:'blur(8px)',
+            }}>＋ 30 XP</div>
+            <div style={{
+              padding:'6px 12px', background:'rgba(255,255,255,.2)', borderRadius:99,
+              fontSize:12, fontWeight:600, backdropFilter:'blur(8px)',
+            }}>3 分鐘</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Continue learning */}
+      <div style={{ padding:'24px 20px 0' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:10 }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg }}>繼續學習</div>
+          <div style={{ fontSize:12, color:'var(--accent)', cursor:'pointer' }}>全部 →</div>
         </div>
 
-        <div className="card" style={{maxWidth: 880}}>
-          <div className="card-head"><h3>題目回顧</h3><span className="meta">{session.length} 題</span></div>
-          <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-            {session.map((q, i) => {
-              const isCorr = window.isQuizCorrect(q, answers[i].value);
-              const t = D.topics.find(x => x.id === q.topic);
+        <div onClick={()=>openCourse('dna')} style={{
+          background:surf, borderRadius:18, padding:14,
+          border:`1px solid ${line}`,
+          display:'flex', gap:12, alignItems:'center', cursor:'pointer',
+        }}>
+          <CourseGlyph id="dna" color="#0E9384" size={52}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg }}>
+              DNA · RNA · 蛋白質
+            </div>
+            <div style={{ fontSize:12, color:muted, marginTop:2, marginBottom:8 }}>
+              Lesson 7 · 反向互補練習
+            </div>
+            <ProgressBar pct={0.72} color="var(--accent)" track={dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)'} height={5}/>
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:13, color:fg, fontWeight:700 }}>72%</div>
+        </div>
+      </div>
+
+      {/* Quick tools */}
+      <div style={{ padding:'24px 20px 0' }}>
+        <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+          快速工具
+        </div>
+
+        {/* BLAST featured card */}
+        <div onClick={()=>openTool('blast')} style={{
+          background:'linear-gradient(135deg, #233040 0%, #0F1A24 100%)',
+          color:'#fff', borderRadius:16, padding:'14px 16px', marginBottom:10,
+          cursor:'pointer', position:'relative', overflow:'hidden',
+          display:'flex', alignItems:'center', gap:14,
+        }}>
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+            <circle cx="18" cy="18" r="13" stroke="#6CD0A5" strokeWidth="2"/>
+            <path d="M28 28l8 8" stroke="#6CD0A5" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="14" cy="16" r="1.5" fill="#6CD0A5"/>
+            <circle cx="22" cy="14" r="1.5" fill="#6CD0A5"/>
+            <circle cx="18" cy="22" r="1.5" fill="#6CD0A5"/>
+            <path d="M14 16l8-2M14 16l4 6M22 14l-4 8" stroke="#6CD0A5" strokeWidth=".8" opacity=".6"/>
+          </svg>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:1.2, opacity:.65, color:'#6CD0A5' }}>
+              FEATURED · BLAST
+            </div>
+            <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:16, marginTop:2 }}>
+              BLAST 模擬搜尋
+            </div>
+            <div style={{ fontSize:11, opacity:.75, marginTop:2, fontFamily:'Noto Sans TC' }}>
+              query → 掃描資料庫 → 看 E-value 排序
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2l6 6-6 6" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" opacity=".5"/></svg>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <ToolCard dark={dark} onClick={()=>openTool('aligner')}
+            icon={<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="4" height="4" rx="1" fill="#0E9384"/><rect x="9" y="5" width="4" height="4" rx="1" fill="#0E9384" opacity=".4"/><rect x="15" y="5" width="4" height="4" rx="1" fill="#0E9384"/><rect x="3" y="13" width="4" height="4" rx="1" fill="#0E9384"/><rect x="9" y="13" width="4" height="4" rx="1" fill="#0E9384" opacity=".4"/><rect x="15" y="13" width="4" height="4" rx="1" fill="#0E9384"/></svg>}
+            title="序列比對" sub="互動式 NW 動畫"/>
+          <ToolCard dark={dark} onClick={()=>openTool('cards')}
+            icon={<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="4" width="14" height="14" rx="3" stroke="#EAA532" strokeWidth="1.7"/><rect x="5" y="2" width="14" height="14" rx="3" fill="#EAA532" opacity=".15"/></svg>}
+            title="單字卡" sub={`${FLASHCARDS_FULL.length} 個生資術語`}/>
+          <ToolCard dark={dark} onClick={()=>openTool('quiz')}
+            icon={<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke="#4F94D8" strokeWidth="1.7"/><path d="M8 9a3 3 0 116 0c0 1.5-3 1.5-3 3M11 16v.5" stroke="#4F94D8" strokeWidth="1.7" strokeLinecap="round"/></svg>}
+            title="小測驗" sub="即時解析"/>
+          <ToolCard dark={dark} onClick={()=>openTool('codon')}
+            icon={<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2v8M11 12v8M2 11h8M12 11h8" stroke="#9C77C7" strokeWidth="1.7" strokeLinecap="round"/><circle cx="11" cy="11" r="2" fill="#9C77C7"/></svg>}
+            title="密碼子表" sub="64 種對應"/>
+        </div>
+      </div>
+
+      {/* Weekly streak grid */}
+      <div style={{ padding:'24px 20px 0' }}>
+        <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+          本週活躍
+        </div>
+        <div style={{
+          background:surf, borderRadius:18, padding:'16px 18px',
+          border:`1px solid ${line}`,
+        }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:6 }}>
+            {['一','二','三','四','五','六','日'].map((d,i)=>{
+              const vals = [0.8, 1, 0.6, 0.9, 1, 0.4, 0];
+              const v = vals[i];
+              const isToday = i===0;
               return (
-                <div key={i} style={{
-                  display: 'grid', gridTemplateColumns: '22px 80px 1fr auto',
-                  gap: 12, alignItems: 'center',
-                  padding: '8px 0', borderBottom: '1px dashed var(--line)'
-                }}>
-                  <span style={{
-                    width: 22, height: 22, borderRadius: 6,
-                    background: isCorr ? 'var(--good)' : 'var(--bad)',
-                    color: 'white', display: 'grid', placeItems: 'center',
-                    fontFamily: 'var(--f-mono)', fontSize: 11, fontWeight: 600
-                  }}>{isCorr ? '✓' : '✗'}</span>
-                  <span className={`chip ${t?.tagColor || 'mint'}`} style={{justifySelf: 'start'}}>
-                    {t?.zh || q.topic}
-                  </span>
-                  <span style={{fontSize: 13, lineHeight: 1.4}}>
-                    {q.stem.replace(/\*\*(.+?)\*\*/g, '$1').slice(0, 80)}
-                    {q.stem.length > 80 ? '…' : ''}
-                  </span>
-                  <span style={{fontFamily:'var(--f-mono)', fontSize: 10,
-                    color: 'var(--ink-3)'}}>{window.quizTypeLabel(q.type)}</span>
+                <div key={d} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flex:1 }}>
+                  <div style={{
+                    width:'100%', height:60, background:dark?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)',
+                    borderRadius:8, position:'relative', overflow:'hidden',
+                  }}>
+                    <div style={{
+                      position:'absolute', bottom:0, left:0, right:0,
+                      height: `${v*100}%`,
+                      background: isToday?'var(--accent)':dark?'rgba(108,208,165,.4)':'#B8E2D7',
+                      borderRadius:'0 0 8px 8px',
+                    }}/>
+                  </div>
+                  <div style={{ fontSize:10, color:isToday?'var(--accent)':muted, fontWeight:isToday?700:500, fontFamily:'Noto Sans TC' }}>{d}</div>
                 </div>
               );
             })}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ToolCard({ icon, title, sub, onClick, dark }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
+  return (
+    <div onClick={onClick} style={{
+      background:surf, borderRadius:16, padding:14,
+      border:`1px solid ${line}`, cursor:'pointer',
+    }}>
+      <div style={{ marginBottom:10 }}>{icon}</div>
+      <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:14, color:fg }}>{title}</div>
+      <div style={{ fontSize:11, color:muted, marginTop:2, fontFamily:'Noto Sans TC, Manrope' }}>{sub}</div>
+    </div>
+  );
+}
+
+// ─────────── Courses screen ───────────
+function CoursesScreen({ dark, openCourse }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
+
+  const totalLessons = COURSES.reduce((s,c)=>s+c.lessons, 0);
+
+  return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle={`${COURSES.length} 章 · ${totalLessons} 小節`} title="課程地圖"/>
+
+      {/* overall progress strip */}
+      <div style={{ padding:'0 20px', marginBottom:18 }}>
+        <div style={{
+          background:surf, borderRadius:16, padding:14,
+          border:`1px solid ${line}`,
+          display:'flex', alignItems:'center', gap:12,
+        }}>
+          <ProgressRing
+            pct={COURSES.reduce((s,c)=>s+c.progress,0)/COURSES.length}
+            size={42} stroke={5} color="var(--accent)"
+            track={dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)'}/>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:muted, letterSpacing:1.2 }}>OVERALL</div>
+            <div style={{ fontFamily:'Space Grotesk', fontSize:16, fontWeight:600, color:fg, lineHeight:1.2 }}>
+              整體進度 {Math.round(COURSES.reduce((s,c)=>s+c.progress,0)/COURSES.length*100)}%
+            </div>
+          </div>
+          <div style={{
+            padding:'5px 9px', borderRadius:99,
+            background: dark?'rgba(255,165,50,.12)':'#FFF1DE',
+            color: dark?'#F2C97A':'#945910',
+            fontFamily:"'JetBrains Mono',monospace", fontSize:11, fontWeight:700, letterSpacing:.4,
+          }}>🔥 7</div>
+        </div>
+      </div>
+
+      {/* grouped courses */}
+      {COURSE_GROUPS.map((g, gi)=>{
+        const items = COURSES.filter(c=>c.group===g.id);
+        if(!items.length) return null;
+        return (
+          <div key={g.id} style={{ marginBottom: gi===COURSE_GROUPS.length-1 ? 0 : 22 }}>
+            <div style={{ padding:'0 20px', marginBottom:10, display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:8 }}>
+                <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg }}>{g.label}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:muted, letterSpacing:1 }}>{g.en}</div>
+              </div>
+              <div style={{ fontSize:11, color:muted, fontFamily:"'JetBrains Mono',monospace" }}>{items.length}</div>
+            </div>
+
+            <div style={{ padding:'0 20px', display:'flex', flexDirection:'column', gap:8 }}>
+              {items.map(c=>(
+                <div key={c.id} onClick={()=>!c.locked && openCourse(c.id)} style={{
+                  background:surf, borderRadius:16, padding:12,
+                  border:`1px solid ${line}`, display:'flex', gap:12, alignItems:'center',
+                  cursor: c.locked?'default':'pointer', opacity:c.locked?.55:1,
+                  position:'relative', overflow:'hidden',
+                }}>
+                  <CourseGlyph id={c.icon} color={c.color} size={44}/>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:14, color:fg, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.title}</div>
+                      {c.locked && <span style={{
+                        fontSize:9, fontFamily:"'JetBrains Mono',monospace",
+                        padding:'2px 5px', background:dark?'#2A2D29':'#EFEDE6', color:muted,
+                        borderRadius:4, letterSpacing:.5, flexShrink:0,
+                      }}>LOCKED</span>}
+                      {c.progress===1 && <span style={{
+                        fontSize:9, fontFamily:"'JetBrains Mono',monospace",
+                        padding:'2px 5px', background:'var(--accent-soft)', color:'var(--accent-ink)',
+                        borderRadius:4, letterSpacing:.5, flexShrink:0,
+                      }}>✓ 完成</span>}
+                    </div>
+                    <div style={{ fontSize:11, color:muted, marginTop:2, fontFamily:"'JetBrains Mono',monospace", letterSpacing:.5 }}>
+                      {c.sub.toUpperCase()} · {c.lessons} 小節
+                    </div>
+                    <div style={{ marginTop:7 }}>
+                      <ProgressBar pct={c.progress} color={c.color} track={dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)'} height={3}/>
+                    </div>
+                  </div>
+                  <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:12, color:fg, fontWeight:700, minWidth:32, textAlign:'right' }}>
+                    {Math.round(c.progress*100)}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────── Lesson detail ───────────
+function LessonDetailScreen({ dark, courseId, onBack, openTool, openReading }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
+  const c = COURSES.find(x=>x.id===courseId) || COURSES[0];
+  const units = c.units || [];
+
+  return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle={c.sub.toUpperCase()} title={c.title} onBack={onBack}/>
+
+      {/* progress hero */}
+      <div style={{ padding:'0 20px' }}>
+        <div style={{
+          background: surf, borderRadius:20, padding:'18px',
+          border:`1px solid ${line}`,
+          display:'flex', alignItems:'center', gap:14,
+        }}>
+          <ProgressRing pct={c.progress} size={62} stroke={6} color={c.color}
+            track={dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)'}/>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:1.2, color:muted }}>PROGRESS</div>
+            <div style={{ fontFamily:'Space Grotesk', fontSize:22, fontWeight:600, color:fg, lineHeight:1.1 }}>
+              {Math.round(c.progress*100)}% <span style={{ fontSize:13, color:muted, fontWeight:500 }}>完成</span>
+            </div>
+            <div style={{ fontSize:12, color:muted, marginTop:4, fontFamily:'Noto Sans TC' }}>
+              再學 {Math.max(1, Math.ceil(c.lessons*(1-c.progress)))} 小節即可獲得章節徽章
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* mini lesson preview: 中心法則 */}
+      {c.id==='dna' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            重點預覽 · 中心法則
+          </div>
+          <div style={{
+            background:surf, borderRadius:18, padding:16,
+            border:`1px solid ${line}`,
+          }}>
+            <CentralDogmaViz dark={dark}/>
+            <div style={{ fontSize:13, color:muted, marginTop:14, lineHeight:1.6, fontFamily:'Noto Sans TC' }}>
+              遺傳資訊由 <b style={{ color:fg }}>DNA</b> 透過<b style={{ color:fg }}>轉錄</b>產生 RNA，
+              再經由<b style={{ color:fg }}>轉譯</b>合成蛋白質。這條路徑稱為「中心法則」。
+            </div>
+          </div>
+        </div>
+      )}
+
+      {c.id==='aln' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            動手試試
+          </div>
+          <SequenceAligner dark={dark}/>
+        </div>
+      )}
+
+      {c.id==='protein' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            重點預覽 · 二級結構
+          </div>
+          <ProteinPreview dark={dark}/>
+        </div>
+      )}
+
+      {c.id==='rnaseq' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            重點預覽 · 火山圖
+          </div>
+          <VolcanoPreview dark={dark}/>
+        </div>
+      )}
+
+      {c.id==='phy' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            重點預覽 · 系統發生樹
+          </div>
+          <TreePreview dark={dark}/>
+        </div>
+      )}
+
+      {c.id==='py' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            程式範例 · 讀取 FASTA
+          </div>
+          <CodePreview dark={dark}/>
+        </div>
+      )}
+
+      {c.id==='ngs' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            重點預覽 · Reads 覆蓋
+          </div>
+          <CoveragePreview dark={dark}/>
+        </div>
+      )}
+
+      {c.id==='sc' && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            重點預覽 · UMAP 分群
+          </div>
+          <UMAPPreview dark={dark}/>
+        </div>
+      )}
+
+      {/* unit list */}
+      {units.length>0 && (
+        <div style={{ padding:'20px 20px 0' }}>
+          <div style={{
+            display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:10,
+          }}>
+            <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg }}>
+              小節
+            </div>
+            {LESSON_CONTENT[c.id] && (
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'var(--accent)', letterSpacing:1, fontWeight:600 }}>
+                FULL TEXT ✓
+              </div>
+            )}
+          </div>
+          <div style={{
+            background:surf, borderRadius:18,
+            border:`1px solid ${line}`, overflow:'hidden',
+          }}>
+            {units.map((u,i)=>{
+              const hasReading = !!(LESSON_CONTENT[c.id] && LESSON_CONTENT[c.id].units[i]);
+              return (
+                <div key={i}
+                  onClick={()=>hasReading && openReading && openReading(c.id, i)}
+                  style={{
+                    display:'flex', alignItems:'center', padding:'14px 16px', gap:12,
+                    borderBottom: i<units.length-1?`1px solid ${line}`:'none',
+                    cursor: hasReading?'pointer':'default',
+                    background: u.active?(dark?'rgba(14,147,132,.08)':'var(--accent-soft)'):'transparent',
+                    opacity: hasReading?1:.6,
+                  }}>
+                  <div style={{
+                    width:24, height:24, borderRadius:'50%', flexShrink:0,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    background: u.done? c.color : u.active?'var(--accent)':dark?'#2A2D29':'#EFEDE6',
+                    color: u.done||u.active?'#fff':muted,
+                    fontSize:11, fontWeight:700, fontFamily:"'JetBrains Mono',monospace",
+                  }}>
+                    {u.done? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5l2.5 2.5 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> : i+1}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, color:fg, fontWeight:u.active?600:500, fontFamily:'Noto Sans TC, Manrope' }}>{u.title}</div>
+                    {u.active && <div style={{ fontSize:11, color:'var(--accent)', marginTop:2, fontFamily:"'JetBrains Mono',monospace", letterSpacing:.4 }}>IN PROGRESS</div>}
+                    {!hasReading && !u.active && (
+                      <div style={{ fontSize:10, color:muted, marginTop:2, fontFamily:"'JetBrains Mono',monospace", letterSpacing:.4 }}>編寫中</div>
+                    )}
+                  </div>
+                  {hasReading && (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2l5 5-5 5" stroke={muted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CentralDogmaViz({ dark }){
+  const muted = dark?'#9E9C90':'#707974';
+  const fg = dark?'#F0EEE5':'#0F1614';
+  return (
+    <div>
+      <div style={{ display:'flex', alignItems:'center', gap:6, fontFamily:'Manrope, Noto Sans TC' }}>
+        <Bubble title="DNA" sub="雙股" color="#0E9384" dark={dark}/>
+        <Arrow label="轉錄" dark={dark}/>
+        <Bubble title="RNA" sub="單股" color="#9C77C7" dark={dark}/>
+        <Arrow label="轉譯" dark={dark}/>
+        <Bubble title="蛋白質" sub="多肽" color="#EAA532" dark={dark}/>
+      </div>
+      <div style={{
+        marginTop:12, padding:'8px 10px',
+        background: dark?'#14160E':'#F6F4EC', borderRadius:10,
+        fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:muted, letterSpacing:.6,
+        textAlign:'center',
+      }}>
+        ATGCGT ─▶ AUGCGU ─▶ Met-Arg
+      </div>
+    </div>
+  );
+}
+
+function Bubble({ title, sub, color, dark }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  return (
+    <div style={{
+      flex:1, padding:'10px 4px', borderRadius:12, textAlign:'center',
+      background: color+'1F',
+      border:`1px solid ${color}33`,
+    }}>
+      <div style={{ fontFamily:'Space Grotesk', fontSize:13, fontWeight:700, color }}>{title}</div>
+      <div style={{ fontSize:10, color:muted, fontFamily:'Noto Sans TC' }}>{sub}</div>
+    </div>
+  );
+}
+
+function Arrow({ label, dark }){
+  const muted = dark?'#9E9C90':'#707974';
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0, padding:'0 2px' }}>
+      <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
+        <path d="M2 5h17M14 1l5 4-5 4" stroke={muted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <div style={{ fontSize:9, color:muted, marginTop:3, fontFamily:'Noto Sans TC' }}>{label}</div>
+    </div>
+  );
+}
+
+// ─────────── Practice hub ───────────
+function PracticeScreen({ dark, openTool }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
+
+  const [seg, setSeg] = React.useState('tools'); // tools | tests
+
+  // Tool cards
+  const tools = [
+    { id:'aligner', title:'序列比對', sub:'NW 動畫', icon:'⇌', col:'#0E9384' },
+    { id:'gc',      title:'GC 含量計算', sub:'GC / AT / Tm', icon:'🧪', col:'#4FB37E' },
+    { id:'revcomp', title:'反向互補',     sub:'步驟拆解',     icon:'⇄', col:'#4F94D8' },
+    { id:'translate', title:'密碼子翻譯', sub:'6 frame ORF',  icon:'🧬', col:'#9C77C7' },
+    { id:'tm',      title:'Tm 計算',     sub:'引子設計',     icon:'🌡', col:'#EAA532' },
+    { id:'codon',   title:'密碼子表',    sub:'64 → 20',     icon:'📊', col:'#EAA532' },
+    { id:'hwe',     title:'HWE 計算',    sub:'p² + 2pq + q²', icon:'∑', col:'#A5318D' },
+    { id:'cards',   title:'單字卡',      sub:`${FLASHCARDS_FULL.length} 張`, icon:'🃏', col:'#0E9384' },
+  ];
+
+  return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark}
+        subtitle={seg==='tools' ? `${tools.length+2} INTERACTIVE TOOLS` : `${QUIZ_BANK.length} 題 · ${new Set(QUIZ_BANK.map(q=>q.course)).size} 章節`}
+        title="練習"/>
+
+      {/* segment switcher */}
+      <div style={{ padding:'0 20px', marginBottom:16 }}>
+        <div style={{
+          display:'flex', background:dark?'#14160E':'#EFEDE6',
+          borderRadius:12, padding:3, gap:2,
+        }}>
+          {[
+            { id:'tools', label:'互動工具', n:tools.length+2 },
+            { id:'tests', label:'測驗',     n:QUIZ_BANK.length },
+          ].map(s=>{
+            const on = s.id===seg;
+            return (
+              <button key={s.id} onClick={()=>setSeg(s.id)} style={{
+                flex:1, padding:'9px 4px', borderRadius:10, border:'none',
+                background: on ? (dark?'#1E211D':'#fff') : 'transparent',
+                color: on ? fg : muted,
+                fontFamily:'Manrope, Noto Sans TC', fontSize:13, fontWeight:600,
+                cursor:'pointer', transition:'all .2s',
+                boxShadow: on ? (dark?'0 1px 3px rgba(0,0,0,.4)':'0 1px 3px rgba(0,0,0,.08)') : 'none',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+              }}>
+                {s.label}
+                <span style={{
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:10.5,
+                  color: on?'var(--accent)':muted, fontWeight:700,
+                }}>{s.n}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {seg==='tools' && (
+        <div style={{ padding:'0 20px' }}>
+          {/* BLAST featured */}
+          <div onClick={()=>openTool('blast')} style={{
+            background:'linear-gradient(135deg, #233040 0%, #0F1A24 100%)',
+            color:'#fff', borderRadius:16, padding:'14px 16px', marginBottom:12,
+            cursor:'pointer', position:'relative', overflow:'hidden',
+            display:'flex', alignItems:'center', gap:14,
+            boxShadow:'0 8px 24px rgba(15,26,36,.25)',
+          }}>
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+              <circle cx="18" cy="18" r="13" stroke="#6CD0A5" strokeWidth="2"/>
+              <path d="M28 28l8 8" stroke="#6CD0A5" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="14" cy="16" r="1.5" fill="#6CD0A5"/>
+              <circle cx="22" cy="14" r="1.5" fill="#6CD0A5"/>
+              <circle cx="18" cy="22" r="1.5" fill="#6CD0A5"/>
+            </svg>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:1.2, color:'#6CD0A5' }}>
+                FEATURED · BLAST
+              </div>
+              <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:16, marginTop:2 }}>
+                BLAST 模擬搜尋
+              </div>
+              <div style={{ fontSize:11, opacity:.75, marginTop:2, fontFamily:'Noto Sans TC' }}>
+                4 個 query 預設 · 掃描動畫 · 結果剖析
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2l6 6-6 6" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" opacity=".5"/></svg>
+          </div>
+
+          {/* tools grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            {tools.map(t=>(
+              <div key={t.id} onClick={()=>openTool(t.id)} style={{
+                background:surf, borderRadius:14, padding:'12px 12px',
+                border:`1px solid ${line}`, cursor:'pointer',
+                display:'flex', flexDirection:'column', gap:8,
+                borderLeft:`3px solid ${t.col}`,
+              }}>
+                <div style={{ fontSize:22 }}>{t.icon}</div>
+                <div>
+                  <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:13.5, color:fg, lineHeight:1.2 }}>{t.title}</div>
+                  <div style={{ fontSize:11, color:muted, marginTop:2, fontFamily:"'JetBrains Mono',monospace", letterSpacing:.4 }}>{t.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* secondary actions */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:16 }}>
+            <button onClick={()=>openTool('bookmarks')} style={{
+              padding:'12px 14px', borderRadius:14, background:surf, border:`1px solid ${line}`,
+              cursor:'pointer', textAlign:'left',
+              display:'flex', alignItems:'center', gap:10, fontFamily:'Manrope, Noto Sans TC',
+            }}>
+              <span style={{ fontSize:20 }}>📌</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:fg }}>我的收藏</div>
+                <div style={{ fontSize:10.5, color:muted, marginTop:1, fontFamily:"'JetBrains Mono',monospace" }}>單字卡 + 小節</div>
+              </div>
+            </button>
+            <button onClick={()=>openTool('review')} style={{
+              padding:'12px 14px', borderRadius:14, background:surf, border:`1px solid ${line}`,
+              cursor:'pointer', textAlign:'left',
+              display:'flex', alignItems:'center', gap:10, fontFamily:'Manrope, Noto Sans TC',
+            }}>
+              <span style={{ fontSize:20 }}>🔁</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:fg }}>今日複習</div>
+                <div style={{ fontSize:10.5, color:muted, marginTop:1, fontFamily:"'JetBrains Mono',monospace" }}>SRS 間隔重複</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {seg==='tests' && (
+        <div style={{ padding:'0 20px' }}>
+          {/* big quiz card */}
+          <div onClick={()=>openTool('quiz')} style={{
+            background:'linear-gradient(135deg, #4F94D8, #6BB9F0)', color:'#fff',
+            borderRadius:20, padding:18, marginBottom:10, position:'relative', overflow:'hidden', cursor:'pointer',
+            boxShadow:'0 8px 24px rgba(79,148,216,.25)',
+          }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:1.4, opacity:.85 }}>QUIZ · 跨章節混合</div>
+            <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontSize:22, fontWeight:600, marginTop:4 }}>今日小測</div>
+            <div style={{ fontSize:13, opacity:.92, marginTop:4, fontFamily:'Noto Sans TC' }}>
+              從各章節各挑一題，3 分鐘完成
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:14 }}>
+              <div style={{ padding:'6px 10px', background:'rgba(255,255,255,.22)', borderRadius:99, fontSize:11, fontWeight:600 }}>＋ 30 XP</div>
+              <div style={{ padding:'6px 10px', background:'rgba(255,255,255,.22)', borderRadius:99, fontSize:11, fontWeight:600 }}>連勝 +1</div>
+            </div>
+            <div style={{ position:'absolute', right:-10, bottom:-30, fontSize:140, opacity:.12 }}>🎯</div>
+          </div>
+
+          {/* final exam */}
+          <div onClick={()=>openTool('quiz:final')} style={{
+            background:'linear-gradient(135deg, #A5318D, #D076B7)', color:'#fff',
+            borderRadius:16, padding:'14px 16px', marginBottom:18, cursor:'pointer',
+            display:'flex', alignItems:'center', gap:14, position:'relative', overflow:'hidden',
+            boxShadow:'0 6px 18px rgba(165,49,141,.2)',
+          }}>
+            <div style={{ fontSize:30 }}>🏆</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, letterSpacing:1.3, opacity:.85 }}>FINAL EXAM</div>
+              <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, marginTop:2 }}>期末總測</div>
+              <div style={{ fontSize:11.5, opacity:.92, marginTop:1, fontFamily:'Noto Sans TC' }}>20 題隨機混合 · 全 13 章節</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2l6 6-6 6" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" opacity=".5"/></svg>
+          </div>
+
+          {/* chapter quizzes */}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:10 }}>
+            <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg }}>依章節小測</div>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:muted, letterSpacing:1 }}>
+              {new Set(QUIZ_BANK.map(q=>q.course)).size} 章
+            </div>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            {COURSES.map(c=>{
+              const n = QUIZ_BANK.filter(q=>q.course===c.id).length;
+              if(n===0) return null;
+              return (
+                <div key={c.id} onClick={()=>openTool(`quiz:${c.id}`)} style={{
+                  background:surf, borderRadius:14, padding:12,
+                  border:`1px solid ${line}`, borderLeft:`3px solid ${c.color}`,
+                  cursor:'pointer',
+                  display:'flex', flexDirection:'column', gap:6,
+                }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontSize:12.5, fontWeight:600, color:fg, lineHeight:1.2 }}>{c.title}</div>
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:c.color, fontWeight:700 }}>{n}題</div>
+                  </div>
+                  <div style={{ fontSize:10, color:muted, fontFamily:"'JetBrains Mono',monospace", letterSpacing:.4 }}>
+                    {c.sub.toUpperCase()}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* hint */}
+          <div style={{
+            marginTop:18, padding:'12px 14px', borderRadius:12,
+            background:dark?'#14160E':'#F6F4EC', border:`1px dashed ${line}`,
+            fontSize:11.5, color:muted, fontFamily:'Noto Sans TC', lineHeight:1.6,
+          }}>
+            <b style={{ color:fg }}>提示</b>　每題答完都有解析。錯題不會降低 XP，只計算正確答對的題數。
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────── Tool screens (full) ───────────
+function ToolScreen({ dark, tool, onBack, openReading }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  if(tool==='quiz' || (tool && tool.startsWith('quiz:'))) {
+    const courseId = tool && tool.startsWith('quiz:') ? tool.slice(5) : null;
+    const isFinal = courseId === 'final';
+    const courseName = courseId && !isFinal ? (COURSES.find(c=>c.id===courseId)?.title) : null;
+    return (
+      <div style={{ padding:'0 0 100px' }}>
+        <AppHeader dark={dark}
+          subtitle={isFinal ? 'FINAL EXAM · 20 隨機題' : courseId ? `QUIZ · ${courseName?.toUpperCase()}` : `QUIZ · 跨章節混合`}
+          title={isFinal ? '期末總測' : courseId ? courseName + ' 小測' : '今日小測'}
+          onBack={onBack}/>
+        <div style={{ padding:'0 20px' }}>
+          <QuizCard dark={dark} courseId={courseId}/>
+        </div>
+      </div>
     );
   }
-
-  // === Session screen ===
-  const topic = D.topics.find(t => t.id === q.topic);
-  const diffLabels = ['', '入門', '標準', '進階'];
-
-  return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb">{idx + 1} / {total} · {correct}/{answered} 正確</div>
-          <h1>練習測驗</h1>
+  if(tool==='gc') return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="GC CONTENT CALCULATOR" title="GC 含量計算" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}><GCCalculator dark={dark}/></div>
+    </div>
+  );
+  if(tool==='revcomp') return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="REVERSE COMPLEMENT" title="反向互補" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}><RevCompTool dark={dark}/></div>
+    </div>
+  );
+  if(tool==='translate') return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="CODON TRANSLATOR · 6 FRAMES" title="密碼子翻譯" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}><CodonTranslator dark={dark}/></div>
+    </div>
+  );
+  if(tool==='tm') return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="MELTING TEMPERATURE" title="Tm 計算" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}><TmCalculator dark={dark}/></div>
+    </div>
+  );
+  if(tool==='hwe') return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="HARDY-WEINBERG" title="HWE 平衡計算" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}><HWECalculator dark={dark}/></div>
+    </div>
+  );
+  if(tool==='cards') {
+    const total = (typeof FLASHCARDS_FULL !== 'undefined' ? FLASHCARDS_FULL : FLASHCARDS).length;
+    return (
+      <div style={{ padding:'0 0 100px' }}>
+        <AppHeader dark={dark} subtitle={`FLASHCARDS · ${total} TERMS`} title="單字卡" onBack={onBack}/>
+        <div style={{ padding:'0 20px' }}>
+          <FlashCardDeck dark={dark} openReading={openReading}/>
         </div>
-        <button className="btn ghost sm" onClick={restart}>結束</button>
       </div>
-
-      <div className="quiz-card">
-        <div className="quiz-prog">
-          <span>題 {idx + 1} / {total}</span>
-          <div className="bar"><i style={{width: `${((idx+1)/total)*100}%`}} /></div>
-          <span className={`chip ${topic?.tagColor || 'mint'}`}>{topic?.zh}</span>
-          <span style={{fontFamily:'var(--f-mono)', fontSize: 10, color:'var(--ink-3)'}}>
-            {window.quizTypeLabel(q.type)} · {diffLabels[q.difficulty]}
-          </span>
+    );
+  }
+  if(tool==='aligner') return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="SEQUENCE ALIGNMENT" title="序列比對" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}>
+        <SequenceAligner dark={dark}/>
+        <div style={{
+          marginTop:14, padding:14, borderRadius:14,
+          background: dark?'#1E211D':'#fff', border:`1px solid ${dark?'#2A2D29':'#E5E2D9'}`,
+          fontSize:12, color:dark?'#9E9C90':'#707974', lineHeight:1.6, fontFamily:'Noto Sans TC',
+        }}>
+          <b style={{ color:fg }}>提示</b>　動畫展示 Needleman-Wunsch 全域比對如何逐欄決定對齊：
+          綠色短條代表「相符」、紅點代表「錯配」、灰線代表「插入空位 (gap)」。
         </div>
+      </div>
+    </div>
+  );
+  if(tool==='blast') return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="BLAST · NUCLEOTIDE SEARCH" title="BLAST 模擬" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}>
+        <BlastTool dark={dark}/>
+        <div style={{
+          marginTop:14, padding:14, borderRadius:14,
+          background: dark?'#1E211D':'#fff', border:`1px solid ${dark?'#2A2D29':'#E5E2D9'}`,
+          fontSize:12, color:dark?'#9E9C90':'#707974', lineHeight:1.6, fontFamily:'Noto Sans TC',
+        }}>
+          <b style={{ color:fg }}>怎麼讀 BLAST 結果？</b><br/>
+          <b style={{ color:'var(--accent)' }}>Bit score</b> 越高越好；<b style={{ color:'var(--accent)' }}>E-value</b> 越小越顯著。
+          一般以 E &lt; 1e-5 視為同源 hit。Identity 是逐位對齊的相同比例；Coverage 是 query 被對到的覆蓋比例。
+        </div>
+      </div>
+    </div>
+  );
+  if(tool==='codon') return <CodonTable dark={dark} onBack={onBack}/>;
+  if(tool==='bookmarks') return <BookmarksScreen dark={dark} onBack={onBack} openReading={openReading} openTool={(t)=>onBack && onBack()}/>;
+  if(tool==='review')    return <ReviewScreen dark={dark} onBack={onBack} openTool={(t)=>onBack && onBack()}/>;
+  return null;
+}
 
-        <p className="quiz-stem" dangerouslySetInnerHTML={{
-          __html: q.stem.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        }} />
-
-        <window.QuizQuestion q={q}
-          answer={cur.value} revealed={cur.revealed}
-          onSelect={updateAnswer} />
-
-        {cur.revealed && (
-          <div className="explain">
-            <div className="head">
-              <span>解釋</span>
-              <span>·</span>
-              <span style={{color: window.isQuizCorrect(q, cur.value) ? 'var(--good)' : 'var(--bad)'}}>
-                {window.isQuizCorrect(q, cur.value) ? '正確！' : '再想想'}
-              </span>
+// ─────────── Codon Table ───────────
+const CODONS = {
+  // first letter U/C/A/G
+  // simplified one-letter
+  'UUU':'F','UUC':'F','UUA':'L','UUG':'L',
+  'UCU':'S','UCC':'S','UCA':'S','UCG':'S',
+  'UAU':'Y','UAC':'Y','UAA':'*','UAG':'*',
+  'UGU':'C','UGC':'C','UGA':'*','UGG':'W',
+  'CUU':'L','CUC':'L','CUA':'L','CUG':'L',
+  'CCU':'P','CCC':'P','CCA':'P','CCG':'P',
+  'CAU':'H','CAC':'H','CAA':'Q','CAG':'Q',
+  'CGU':'R','CGC':'R','CGA':'R','CGG':'R',
+  'AUU':'I','AUC':'I','AUA':'I','AUG':'M',
+  'ACU':'T','ACC':'T','ACA':'T','ACG':'T',
+  'AAU':'N','AAC':'N','AAA':'K','AAG':'K',
+  'AGU':'S','AGC':'S','AGA':'R','AGG':'R',
+  'GUU':'V','GUC':'V','GUA':'V','GUG':'V',
+  'GCU':'A','GCC':'A','GCA':'A','GCG':'A',
+  'GAU':'D','GAC':'D','GAA':'E','GAG':'E',
+  'GGU':'G','GGC':'G','GGA':'G','GGG':'G',
+};
+const AA_COLOR = {
+  F:'#E0B848', L:'#E0B848', I:'#E0B848', M:'#E0B848', V:'#E0B848', A:'#E0B848', W:'#E0B848', P:'#E0B848', G:'#E0B848', Y:'#E0B848',
+  S:'#4FB37E', T:'#4FB37E', C:'#4FB37E', N:'#4FB37E', Q:'#4FB37E',
+  K:'#4F94D8', R:'#4F94D8', H:'#4F94D8',
+  D:'#E25858', E:'#E25858',
+  '*':'#707974',
+};
+function CodonTable({ dark, onBack }){
+  const [selected, setSelected] = React.useState('AUG');
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
+  const bases = ['U','C','A','G'];
+  return (
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="CODON TABLE · 64 → 20" title="密碼子表" onBack={onBack}/>
+      <div style={{ padding:'0 20px' }}>
+        <div style={{
+          background:surf, borderRadius:18, padding:16, border:`1px solid ${line}`, marginBottom:14,
+        }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:muted, letterSpacing:1, marginBottom:6 }}>
+            SELECTED
+          </div>
+          <div style={{ display:'flex', alignItems:'baseline', gap:14 }}>
+            <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:34, fontWeight:700, color:fg, letterSpacing:2 }}>
+              {selected}
             </div>
-            <p>{q.explain}</p>
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:'Space Grotesk', fontSize:14, fontWeight:600, color:fg }}>
+                {AA_NAME[CODONS[selected]] || '?'} ({CODONS[selected]})
+              </div>
+              <div style={{ fontSize:11, color:muted, fontFamily:'Noto Sans TC' }}>
+                {selected==='AUG'? '起始密碼子 · Methionine' : CODONS[selected]==='*'? '終止密碼子' : '一般密碼子'}
+              </div>
+            </div>
+            <div style={{
+              width:36, height:36, borderRadius:8,
+              background: AA_COLOR[CODONS[selected]] || '#707974',
+              color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+              fontFamily:"'JetBrains Mono',monospace", fontSize:18, fontWeight:700,
+            }}>{CODONS[selected]}</div>
           </div>
-        )}
-
-        <div className="row" style={{marginTop: 22, justifyContent: 'space-between'}}>
-          <button className="btn ghost sm" onClick={() => updateAnswer(null)}>清除</button>
-          {cur.revealed ? (
-            <button className="btn" onClick={next}>
-              {idx + 1 < total ? '下一題 →' : '查看結果 →'}
-            </button>
-          ) : (
-            <button className="btn accent" onClick={submit}
-              disabled={!window.isQuizAnswered(q, cur.value)}
-              style={{opacity: window.isQuizAnswered(q, cur.value) ? 1 : 0.4}}>
-              送出答案
-            </button>
-          )}
         </div>
-      </div>
-    </div>
-  );
-};
 
-// ============ Cheat Sheet ============
-window.CheatPage = function CheatPage() {
-  const D = window.AppData;
-  const [q, setQ] = useState('');
-  const list = D.cards.filter(c =>
-    !q || c.title.includes(q) || c.formula.toLowerCase().includes(q.toLowerCase()) || c.note.includes(q)
-  );
-  return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb">04 · Cheat Sheet</div>
-          <h1>速查卡片</h1>
-          <div className="sub">{D.cards.length} 張高密度公式卡片，可關鍵字搜尋。</div>
-        </div>
-        <input
-          placeholder="搜尋公式或概念..."
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          style={{
-            padding: '8px 12px', borderRadius: 8,
-            border: '1px solid var(--line)',
-            background: 'var(--panel)', color: 'var(--ink)',
-            fontSize: 13, width: 240, fontFamily: 'inherit'
-          }} />
-      </div>
-
-      <div className="cs-grid">
-        {list.map((c, i) => (
-          <div key={i} className="cs-card">
-            <div className="title">{c.title}</div>
-            <div className="formula">{c.formula}</div>
-            <div className="note">{c.note}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ============ Calculator ============
-window.CalcPage = function CalcPage() {
-  const groups = window.CalcCatalog;
-  const [activeGroup, setActiveGroup] = useState(groups[0].group);
-  const [activeId, setActiveId] = useState(groups[0].items[0].id);
-  const group = groups.find(g => g.group === activeGroup);
-  const item = group.items.find(i => i.id === activeId) || group.items[0];
-  const Comp = item.Comp;
-  const total = groups.reduce((s, g) => s + g.items.length, 0);
-
-  return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb">05 · Calculators · {total} tools</div>
-          <h1>計算機</h1>
-          <div className="sub">樣本數、假設檢定、信賴區間、效應量、診斷、迴歸 — 完整生物統計工具箱</div>
-        </div>
-      </div>
-
-      <div style={{display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20, alignItems: 'start'}}>
-        <div className="col" style={{position: 'sticky', top: 0, gap: 4}}>
-          {groups.map(g => (
-            <div key={g.group}>
+        <div style={{
+          background:surf, borderRadius:18, padding:'12px 10px 14px', border:`1px solid ${line}`,
+        }}>
+          {bases.map(b1=>(
+            <div key={b1} style={{ display:'grid', gridTemplateColumns:'24px repeat(4, 1fr)', gap:4, marginBottom:4 }}>
               <div style={{
-                fontFamily: 'var(--f-mono)', fontSize: 10,
-                letterSpacing: '0.12em', textTransform: 'uppercase',
-                color: 'var(--ink-3)', padding: '12px 10px 6px'
-              }}>{g.group}</div>
-              {g.items.map(it => (
-                <button key={it.id}
-                  onClick={() => { setActiveGroup(g.group); setActiveId(it.id); }}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '8px 12px', borderRadius: 8,
-                    border: 0, cursor: 'pointer',
-                    background: activeId === it.id ? 'var(--ink)' : 'transparent',
-                    color: activeId === it.id ? 'var(--bg)' : 'var(--ink-2)',
-                    fontFamily: 'inherit',
-                    fontSize: 13, marginBottom: 1
-                  }}
-                  onMouseEnter={(e) => activeId !== it.id && (e.currentTarget.style.background = 'color-mix(in oklch, var(--ink) 4%, transparent)')}
-                  onMouseLeave={(e) => activeId !== it.id && (e.currentTarget.style.background = 'transparent')}>
-                  {it.title}
-                </button>
+                fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:muted,
+                display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700,
+              }}>{b1}</div>
+              {bases.map(b2=>(
+                <div key={b2} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:2 }}>
+                  {['U','C','A','G'].map(b3=>{
+                    const codon = b1+b2+b3;
+                    const aa = CODONS[codon];
+                    const isSel = codon===selected;
+                    return (
+                      <div key={b3} onClick={()=>setSelected(codon)} style={{
+                        padding:'6px 4px', borderRadius:6,
+                        background: isSel ? AA_COLOR[aa] : (dark?'#14160E':'#F6F4EC'),
+                        color: isSel ? '#fff' : fg,
+                        textAlign:'center', cursor:'pointer',
+                        fontFamily:"'JetBrains Mono',monospace", fontSize:9.5,
+                        border:`1px solid ${isSel? AA_COLOR[aa]: 'transparent'}`,
+                      }}>
+                        <div style={{ fontWeight:700, letterSpacing:.5 }}>{codon}</div>
+                        <div style={{
+                          fontSize:9, marginTop:1,
+                          color: isSel ? '#fff' : AA_COLOR[aa], fontWeight:700,
+                        }}>{aa}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               ))}
             </div>
           ))}
         </div>
 
-        <div className="calc-card" style={{maxWidth: 640}}>
-          <div style={{marginBottom: 14}}>
-            <div style={{fontFamily:'var(--f-mono)', fontSize: 10, color: 'var(--ink-3)',
-              letterSpacing: '.1em', textTransform: 'uppercase'}}>{item.sub}</div>
-            <h3 style={{fontSize: 20, margin: '4px 0 0', fontWeight: 600, letterSpacing: '-0.015em'}}>
-              {item.title}
-            </h3>
-          </div>
-          <Comp />
+        {/* legend */}
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginTop:14 }}>
+          {[
+            ['疏水','#E0B848'],['極性','#4FB37E'],['正電','#4F94D8'],['負電','#E25858'],['終止','#707974'],
+          ].map(([t,c])=>(
+            <div key={t} style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:muted, fontFamily:'Noto Sans TC' }}>
+              <span style={{ width:10, height:10, borderRadius:3, background:c }}/>{t}
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
+}
+const AA_NAME = {
+  F:'Phe',L:'Leu',I:'Ile',M:'Met',V:'Val',S:'Ser',P:'Pro',T:'Thr',A:'Ala',Y:'Tyr',
+  H:'His',Q:'Gln',N:'Asn',K:'Lys',D:'Asp',E:'Glu',C:'Cys',W:'Trp',R:'Arg',G:'Gly','*':'STOP',
 };
-// ============ Case scenario ============
-window.CasePage = function CasePage() {
+
+// ─────────── Profile screen ───────────
+function ProfileScreen({ dark, streak, setStreak }){
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const muted = dark?'#9E9C90':'#707974';
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
+  const stats = [
+    { label:'總 XP', val:'1,240' },
+    { label:'已學', val:'18 節' },
+    { label:'答對率', val:'87%' },
+  ];
+  const badges = [
+    { name:'DNA 新手', icon:'🧬', got:true },
+    { name:'連勝 7 天', icon:'🔥', got:true },
+    { name:'比對達人', icon:'⇌', got:true },
+    { name:'BLAST 高手', icon:'🔍', got:false },
+    { name:'演化樹師', icon:'🌳', got:false },
+    { name:'蛋白工程', icon:'🧪', got:false },
+  ];
+
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb">06 · Case Study</div>
-          <h1>臨床情境模擬</h1>
-          <div className="sub">真實情境讓統計觀念有歸宿</div>
-        </div>
-      </div>
-
-      <div className="case-grid">
-        <div className="case-panel">
-          <div className="label">CASE · 02 / 12</div>
-          <h2>新型抗凝血劑 vs Warfarin：心房顫動病人的中風預防</h2>
-          <div className="scenario">
-            一項 <strong>非劣性 RCT</strong> 招募 6,300 名 AF 病人，1:1 隨機分配至新藥 N 或對照組 W。
-            追蹤中位數 24 個月，主要終點為「中風或全身性栓塞」。
-            意向治療分析得 N 組 1.34%/年，W 組 1.65%/年，<strong>HR = 0.81</strong>，
-            <strong>95% CI: (0.65, 1.00)</strong>，非劣性邊界 1.46。
-            出血事件 N 組 2.71%/年，W 組 3.43%/年，HR = 0.79，p &lt; 0.001。
-          </div>
-
-          <div style={{marginTop: 18}}>
-            <div className="meta" style={{fontFamily:'var(--f-mono)', fontSize:10, color:'var(--ink-3)', letterSpacing:'.12em', textTransform:'uppercase', marginBottom: 10}}>關鍵證據</div>
-            <div className="evidence">
-              <div className="ev-row"><div className="k">主要療效 HR</div><div className="v good">0.81 (0.65–1.00)</div></div>
-              <div className="ev-row"><div className="k">非劣性邊界 (預設)</div><div className="v">1.46</div></div>
-              <div className="ev-row"><div className="k">大出血 HR</div><div className="v good">0.79, p &lt; 0.001</div></div>
-              <div className="ev-row"><div className="k">所需治療人數 NNT</div><div className="v">≈ 323 / 年</div></div>
-              <div className="ev-row"><div className="k">分析方式</div><div className="v">ITT + per-protocol 一致</div></div>
+    <div style={{ padding:'0 0 100px' }}>
+      <AppHeader dark={dark} subtitle="STUDENT · BIOINFORMATICS" title="我的"/>
+      <div style={{ padding:'0 20px' }}>
+        {/* hero card */}
+        <div style={{
+          background:surf, borderRadius:20, padding:'20px',
+          border:`1px solid ${line}`,
+          display:'flex', alignItems:'center', gap:14,
+        }}>
+          <div style={{
+            width:64, height:64, borderRadius:20,
+            background: 'linear-gradient(135deg, var(--accent), #6CD0A5)',
+            color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+            fontFamily:'Space Grotesk', fontSize:24, fontWeight:700,
+          }}>陳</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontSize:18, fontWeight:600, color:fg }}>
+              陳同學
+            </div>
+            <div style={{ fontSize:12, color:muted, fontFamily:'Noto Sans TC', marginTop:2 }}>
+              生物學系 · 大二 · Lv 6
+            </div>
+            <ProgressBar pct={0.62} color="var(--accent)" track={dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)'} height={4}/>
+            <div style={{ fontSize:10, color:muted, fontFamily:"'JetBrains Mono',monospace", marginTop:4, letterSpacing:.5 }}>
+              760 / 1200 XP → LV 7
             </div>
           </div>
         </div>
 
-        <div className="col">
-          <window.KMPlot hazardA={0.013} hazardB={0.017} />
-
-          <div className="card">
-            <div className="card-head">
-              <h3>判讀挑戰</h3>
-              <span className="meta">step 3 / 5</span>
+        {/* stats */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginTop:12 }}>
+          {stats.map(s=>(
+            <div key={s.label} style={{
+              background:surf, borderRadius:14, padding:'12px 10px', border:`1px solid ${line}`, textAlign:'center',
+            }}>
+              <div style={{ fontFamily:'Space Grotesk', fontSize:18, fontWeight:700, color:fg }}>{s.val}</div>
+              <div style={{ fontSize:11, color:muted, marginTop:2, fontFamily:'Noto Sans TC' }}>{s.label}</div>
             </div>
-            <p style={{margin: '0 0 14px', fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6}}>
-              下列哪一項<strong style={{color:'var(--ink)'}}>能</strong>支持「新藥在療效上不劣於 Warfarin」的結論？
-            </p>
-            <div className="col" style={{gap: 6}}>
-              {[
-                'HR 點估計 < 1',
-                '95% CI 上界 < 預設非劣性邊界',
-                'p 值 < 0.05',
-                '出血率較低'
-              ].map((opt, i) => (
-                <button key={i} className="choice" style={{padding: '10px 12px', fontSize: 12.5}}>
-                  <span className="letter">{String.fromCharCode(65 + i)}</span>
-                  <span>{opt}</span>
-                  <span></span>
-                </button>
-              ))}
+          ))}
+        </div>
+
+        {/* streak card */}
+        <div style={{
+          marginTop:12, padding:16, borderRadius:18,
+          background: dark? 'linear-gradient(135deg, rgba(234,165,50,.15), rgba(234,165,50,.05))' : 'linear-gradient(135deg, #FFF1DE, #FFE5C2)',
+          border:`1px solid ${dark?'rgba(234,165,50,.25)':'#F4D9B0'}`,
+          display:'flex', alignItems:'center', gap:14,
+        }}>
+          <div style={{ fontSize:36 }}>🔥</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontFamily:'Space Grotesk', fontSize:22, fontWeight:700, color:dark?'#F2C97A':'#945910' }}>
+              {streak} 天連勝
+            </div>
+            <div style={{ fontSize:12, color:dark?'#C7A57C':'#9B7A45', fontFamily:'Noto Sans TC' }}>
+              繼續保持！明天小測就可達 {streak+1} 天
             </div>
           </div>
+        </div>
 
-          <div className="card">
-            <div className="card-head">
-              <h3>關聯主題</h3>
-              <span className="meta">link</span>
-            </div>
-            <div className="row" style={{flexWrap: 'wrap', gap: 6}}>
-              {['存活分析', 'Cox 比例風險', '非劣性試驗', 'HR vs OR', 'ITT 分析'].map(t => (
-                <span key={t} className="chip ghost" style={{cursor: 'pointer'}}>{t}</span>
-              ))}
-            </div>
+        {/* badges */}
+        <div style={{ marginTop:18 }}>
+          <div style={{ fontFamily:'Space Grotesk, Noto Sans TC', fontWeight:600, fontSize:15, color:fg, marginBottom:10 }}>
+            徽章 <span style={{ color:muted, fontWeight:500, fontSize:13 }}>3 / 6</span>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+            {badges.map(b=>(
+              <div key={b.name} style={{
+                background:surf, borderRadius:14, padding:'14px 8px', textAlign:'center',
+                border:`1px solid ${line}`, opacity: b.got?1:.4,
+              }}>
+                <div style={{ fontSize:28, filter: b.got?'none':'grayscale(1)' }}>{b.icon}</div>
+                <div style={{ fontSize:11, color:fg, marginTop:6, fontFamily:'Noto Sans TC' }}>{b.name}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
-// ============ Topic Detail (drill-in) ============
-window.TopicDetail = function TopicDetail({ topicId, onBack, chartStyle, onNav, onOpenLesson }) {
-  const D = window.AppData;
-  const t = D.topics.find(x => x.id === topicId) || D.topics[0];
-  const [tab, setTab] = useState('overview');
-
-  // Pick a representative chart per topic
-  const ChartFor = () => {
-    if (t.id === 'prob' || t.id === 'desc' || t.id === 'ci' || t.id === 'ht')
-      return <window.NormalPlot mu={0} sigma={1} lo={-1.96} hi={1.96} chartStyle={chartStyle} />;
-    if (t.id === 'reg') return <window.RegressionPlot slope={0.6} intercept={0.1} noise={0.6} />;
-    if (t.id === 'surv') return <window.KMPlot hazardA={0.04} hazardB={0.07} />;
-    if (t.id === 'diag') return <window.ROCPlot auc={0.86} />;
-    return <window.BinomialPlot n={20} p={0.4} />;
-  };
-
+// ─────────── Course-specific mini visualizations ───────────
+function PreviewCard({ children, dark, foot }){
+  const surf = dark?'#1E211D':'#fff';
+  const line = dark?'#2A2D29':'#E5E2D9';
+  const muted = dark?'#9E9C90':'#707974';
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <div className="crumb" style={{cursor:'pointer'}} onClick={onBack}>← 主題庫 · Chapter {t.no}</div>
-          <h1>{t.zh}</h1>
-          <div className="sub">{t.en} · {t.lessons} lessons · {t.time} min · {t.blurb}</div>
-        </div>
-        <div className="row">
-          <span className={`chip ${t.tagColor}`}>{t.tag}</span>
-          <span className="diff">
-            {[1,2,3].map(i => <i key={i} className={i <= t.difficulty ? 'on' : ''} />)}
-          </span>
-        </div>
-      </div>
+    <div style={{ background:surf, borderRadius:18, padding:16, border:`1px solid ${line}` }}>
+      {children}
+      {foot && (
+        <div style={{
+          marginTop:12, paddingTop:10, borderTop:`1px dashed ${line}`,
+          fontSize:12, color:muted, lineHeight:1.55, fontFamily:'Noto Sans TC, Manrope',
+        }}>{foot}</div>
+      )}
+    </div>
+  );
+}
 
-      <div className="tabs">
-        {[
-          { id: 'overview', label: '概覽' },
-          { id: 'lessons', label: '課程 · ' + t.lessons },
-          { id: 'practice', label: '練習' }
-        ].map(x => (
-          <button key={x.id}
-            className={`tab ${tab === x.id ? 'active' : ''}`}
-            onClick={() => setTab(x.id)}>{x.label}</button>
+function ProteinPreview({ dark }){
+  const muted = dark?'#9E9C90':'#707974';
+  return (
+    <PreviewCard dark={dark} foot={<><b style={{ color:'var(--accent)' }}>α-helix</b> 由肽鍵內氫鍵纏繞成右手螺旋；<b style={{ color:'#EAA532' }}>β-sheet</b> 則是肽鏈彼此平行/反平行排列形成的摺片。</>}>
+      <svg width="100%" height="120" viewBox="0 0 320 120">
+        {/* helix */}
+        <text x="14" y="18" fontFamily="JetBrains Mono" fontSize="10" fill={muted} letterSpacing="1">α-HELIX</text>
+        <path d="M16 60q12-32 32 0t32 0 32 0 32 0" stroke="var(--accent)" strokeWidth="3" fill="none"/>
+        <path d="M16 60q12 32 32 0t32 0 32 0 32 0" stroke="var(--accent)" strokeWidth="3" fill="none" opacity=".35"/>
+        {[16,48,80,112,144].map((x,i)=>(
+          <circle key={i} cx={x} cy="60" r="3.5" fill="var(--accent)"/>
         ))}
+        {/* sheet */}
+        <text x="180" y="18" fontFamily="JetBrains Mono" fontSize="10" fill={muted} letterSpacing="1">β-SHEET</text>
+        <path d="M180 40l8-6 8 6 8-6 8 6 8-6 8 6 8-6 8 6 8-6 8 6 8-6 8 6" stroke="#EAA532" strokeWidth="2.5" fill="none"/>
+        <path d="M180 70l8-6 8 6 8-6 8 6 8-6 8 6 8-6 8 6 8-6 8 6 8-6 8 6" stroke="#EAA532" strokeWidth="2.5" fill="none"/>
+        <path d="M188 100l-8 6M188 100l8 6M200 100l-8 6M200 100l8 6" stroke="#EAA532" strokeWidth="2.5" opacity=".6" fill="none"/>
+        {/* labels */}
+        <text x="16" y="100" fontFamily="JetBrains Mono" fontSize="9" fill={muted}>3.6 res/turn</text>
+        <text x="180" y="100" fontFamily="JetBrains Mono" fontSize="9" fill={muted}>strands ↔ H-bond</text>
+      </svg>
+    </PreviewCard>
+  );
+}
+
+function VolcanoPreview({ dark }){
+  const muted = dark?'#9E9C90':'#707974';
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const grid = dark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)';
+  // simulated points
+  const points = React.useMemo(()=>{
+    const arr = [];
+    for(let i=0;i<80;i++){
+      const x = (Math.random()-0.5)*6; // log2FC
+      const y = Math.abs(x)*1.2 + Math.random()*3 + 0.2; // -log10 p
+      arr.push({ x, y });
+    }
+    return arr;
+  },[]);
+  const w = 290, h = 160;
+  const px = x => 40 + (x+4)/8*(w-50);
+  const py = y => h-24 - (y/8)*(h-30);
+  return (
+    <PreviewCard dark={dark} foot={<>左右兩側為顯著上/下調基因（log₂FC 大且 p 值小）。閾值線：|log₂FC|=1，-log₁₀(p)=1.3</>}>
+      <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ display:'block' }}>
+        {/* grid */}
+        {[2,4,6].map(g=>(
+          <line key={g} x1="40" x2={w} y1={py(g)} y2={py(g)} stroke={grid}/>
+        ))}
+        {/* threshold lines */}
+        <line x1={px(-1)} x2={px(-1)} y1="10" y2={h-24} stroke={muted} strokeDasharray="3 3" opacity=".6"/>
+        <line x1={px(1)} x2={px(1)} y1="10" y2={h-24} stroke={muted} strokeDasharray="3 3" opacity=".6"/>
+        <line x1="40" x2={w} y1={py(1.3)} y2={py(1.3)} stroke={muted} strokeDasharray="3 3" opacity=".6"/>
+        {/* axes */}
+        <line x1="40" x2="40" y1="10" y2={h-24} stroke={muted}/>
+        <line x1="40" x2={w} y1={h-24} y2={h-24} stroke={muted}/>
+        {/* points */}
+        {points.map((p,i)=>{
+          const sig = Math.abs(p.x)>1 && p.y>1.3;
+          const col = sig ? (p.x>0?'#D9594C':'#4F94D8') : (dark?'#5A5C56':'#C8C4B6');
+          return <circle key={i} cx={px(p.x)} cy={py(p.y)} r={sig?3:2} fill={col} opacity={sig?.9:.6}/>;
+        })}
+        {/* labels */}
+        <text x={w/2} y={h-6} textAnchor="middle" fontFamily="JetBrains Mono" fontSize="9" fill={muted}>log₂ FoldChange</text>
+        <text x="10" y={h/2} textAnchor="middle" fontFamily="JetBrains Mono" fontSize="9" fill={muted} transform={`rotate(-90 12 ${h/2})`}>−log₁₀ p</text>
+        <text x={w-46} y="20" fontFamily="JetBrains Mono" fontSize="9" fill="#D9594C">UP</text>
+        <text x="48" y="20" fontFamily="JetBrains Mono" fontSize="9" fill="#4F94D8">DOWN</text>
+      </svg>
+    </PreviewCard>
+  );
+}
+
+function TreePreview({ dark }){
+  const muted = dark?'#9E9C90':'#707974';
+  const fg = dark?'#F0EEE5':'#0F1614';
+  return (
+    <PreviewCard dark={dark} foot={<>分支長度代表演化距離；<b style={{ color:fg }}>Bootstrap</b> 值（節點旁數字）表示分支的穩定度。</>}>
+      <svg width="100%" viewBox="0 0 320 200">
+        {/* tree edges */}
+        <path d="M30 100 L80 100" stroke={muted} strokeWidth="1.5"/>
+        <path d="M80 40 L80 160" stroke={muted} strokeWidth="1.5"/>
+        <path d="M80 40 L130 40" stroke={muted} strokeWidth="1.5"/>
+        <path d="M80 160 L120 160" stroke={muted} strokeWidth="1.5"/>
+        <path d="M120 130 L120 190" stroke={muted} strokeWidth="1.5"/>
+        <path d="M120 130 L180 130" stroke={muted} strokeWidth="1.5"/>
+        <path d="M120 190 L160 190" stroke={muted} strokeWidth="1.5"/>
+        <path d="M130 20 L130 60" stroke={muted} strokeWidth="1.5"/>
+        <path d="M130 20 L200 20" stroke={muted} strokeWidth="1.5"/>
+        <path d="M130 60 L200 60" stroke={muted} strokeWidth="1.5"/>
+        {/* tips */}
+        {[
+          [200, 20, 'Homo sapiens', '#0E9384'],
+          [200, 60, 'Pan troglodytes', '#0E9384'],
+          [180, 130, 'Mus musculus', '#EAA532'],
+          [160, 190, 'Gallus gallus', '#9C77C7'],
+        ].map(([x,y,name,c],i)=>(
+          <g key={i}>
+            <circle cx={x} cy={y} r="4" fill={c}/>
+            <text x={x+9} y={y+4} fontFamily="JetBrains Mono" fontSize="10" fill={fg}>{name}</text>
+          </g>
+        ))}
+        {/* bootstrap labels */}
+        <text x="84" y="36" fontFamily="JetBrains Mono" fontSize="8" fill={muted}>98</text>
+        <text x="124" y="126" fontFamily="JetBrains Mono" fontSize="8" fill={muted}>76</text>
+        <text x="134" y="16" fontFamily="JetBrains Mono" fontSize="8" fill={muted}>99</text>
+        {/* scale */}
+        <line x1="30" x2="70" y1="190" y2="190" stroke={muted}/>
+        <line x1="30" x2="30" y1="186" y2="194" stroke={muted}/>
+        <line x1="70" x2="70" y1="186" y2="194" stroke={muted}/>
+        <text x="32" y="184" fontFamily="JetBrains Mono" fontSize="9" fill={muted}>0.1 subs/site</text>
+      </svg>
+    </PreviewCard>
+  );
+}
+
+function CodePreview({ dark }){
+  const bg = dark?'#0F1410':'#0F1614';
+  const muted = '#74766E';
+  const lines = [
+    { t:'from Bio import SeqIO', c:'k' },
+    { t:'', c:'' },
+    { t:'for rec in SeqIO.parse("genes.fa", "fasta"):', c:'' },
+    { t:'    seq = rec.seq', c:'' },
+    { t:'    gc = (seq.count("G") + seq.count("C")) / len(seq)', c:'' },
+    { t:'    print(rec.id, len(seq), f"{gc:.2%}")', c:'' },
+    { t:'', c:'' },
+    { t:'# NM_001 1542 51.23%', c:'cm' },
+    { t:'# NM_002 2087 47.91%', c:'cm' },
+  ];
+  const color = (s)=>{
+    if(s.startsWith('#')) return '#74766E';
+    return s
+      .replace(/(from|for|in|import)/g, '§k§$1§/§')
+      .replace(/("[^"]*")/g, '§s§$1§/§')
+      .replace(/(\d+(\.\d+)?)/g, '§n§$1§/§');
+  };
+  return (
+    <div style={{
+      background: bg, borderRadius:18, padding:'14px 4px 14px 14px', overflow:'hidden',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10 }}>
+        <span style={{ width:10,height:10,borderRadius:99,background:'#FF5F57' }}/>
+        <span style={{ width:10,height:10,borderRadius:99,background:'#FFBD2E' }}/>
+        <span style={{ width:10,height:10,borderRadius:99,background:'#28C840' }}/>
+        <span style={{ marginLeft:8, fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:'#9C9E96' }}>gc_content.py</span>
       </div>
-
-      <div className="concept-grid">
-        <div className="plot-wrap">
-          <div className="meta">代表性視覺</div>
-          <ChartFor />
-        </div>
-
-        <div className="col">
-          <div className="card">
-            <div className="card-head">
-              <h3>進度</h3>
-              <span className="meta">{Math.round(t.progress*100)}%</span>
-            </div>
-            <div className="progress" style={{marginBottom: 12}}>
-              <i style={{width: `${t.progress*100}%`}} />
-            </div>
-            <button className="btn accent" style={{width: '100%'}}
-              onClick={() => onOpenLesson ? onOpenLesson(0) : onNav('concept')}>
-              開始第 1 課 →
-            </button>
-          </div>
-
-          {onOpenLesson && <window.LessonListDesktop topicId={topicId} onOpen={onOpenLesson} />}
-
-          <div className="card">
-            <div className="card-head">
-              <h3>核心關鍵字</h3>
-              <span className="meta">{t.keywords.length}</span>
-            </div>
-            <div className="row" style={{flexWrap: 'wrap', gap: 6}}>
-              {t.keywords.map((k, i) => (
-                <span key={i} className="chip ghost" style={{fontFamily:'var(--f-mono)'}}>{k}</span>
-              ))}
-            </div>
-          </div>
-
-          <div className="side-note">
-            <h4>學習目標</h4>
-            <p>讀完本章可以：(1) 在合適情境正確選擇方法；(2) 解讀輸出與信賴區間；(3) 識別常見誤用與假設違反。</p>
-          </div>
-        </div>
-      </div>
+      <pre style={{
+        margin:0, fontFamily:"'JetBrains Mono',monospace", fontSize:12,
+        color:'#E0DED2', lineHeight:1.7, overflowX:'auto', paddingRight:14,
+      }}>
+{lines.map((l, i)=>(
+  <div key={i} style={{ color: l.c==='cm'? muted : '#E0DED2' }}>
+    <span style={{ color:muted, marginRight:10, userSelect:'none' }}>{String(i+1).padStart(2,' ')}</span>
+    <Syn line={l.t}/>
+  </div>
+))}
+      </pre>
     </div>
   );
-};
+}
+function Syn({ line }){
+  if(line.startsWith('#')) return <span style={{ color:'#74766E' }}>{line}</span>;
+  const tokens = [];
+  let s = line;
+  const re = /("[^"]*"|\b(from|for|in|import)\b|\b\d+(\.\d+)?\b|f"\{[^}]+\}")/g;
+  let last=0, m;
+  while((m=re.exec(line))){
+    if(m.index>last) tokens.push({ t:line.slice(last,m.index), c:'#E0DED2' });
+    const tok = m[0];
+    let col = '#E0DED2';
+    if(/^(from|for|in|import)$/.test(tok)) col = '#E08EC6';
+    else if(/^"/.test(tok)) col = '#C4DA8B';
+    else if(/^\d/.test(tok)) col = '#E0B848';
+    else if(/^f"/.test(tok)) col = '#C4DA8B';
+    tokens.push({ t:tok, c:col });
+    last = re.lastIndex;
+  }
+  if(last<line.length) tokens.push({ t:line.slice(last), c:'#E0DED2' });
+  return <>{tokens.map((t,i)=><span key={i} style={{ color:t.c }}>{t.t}</span>)}</>;
+}
+
+function CoveragePreview({ dark }){
+  const muted = dark?'#9E9C90':'#707974';
+  const fg = dark?'#F0EEE5':'#0F1614';
+  // simulated coverage
+  const w = 290, h = 90;
+  const bars = React.useMemo(()=>{
+    const arr=[]; let v=15;
+    for(let i=0;i<60;i++){ v = Math.max(2, Math.min(40, v + (Math.random()-.5)*6)); arr.push(v); }
+    return arr;
+  },[]);
+  return (
+    <PreviewCard dark={dark} foot={<>每個垂直條代表某位置上覆蓋的 reads 數量；覆蓋深度不均常見於 GC 偏差或重複區。</>}>
+      <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:muted, letterSpacing:.5, marginBottom:6 }}>
+        chr1:1,000,000–1,001,200 · 平均 ~ 18×
+      </div>
+      <svg width="100%" viewBox={`0 0 ${w} ${h}`}>
+        {bars.map((v,i)=>(
+          <rect key={i} x={4+i*(w-8)/60} y={h-10-(v/40)*(h-16)}
+            width={(w-8)/60 - 1} height={(v/40)*(h-16)}
+            fill="var(--accent)" opacity={.45 + (v/40)*0.5}/>
+        ))}
+        <line x1="0" x2={w} y1={h-10} y2={h-10} stroke={muted} opacity=".5"/>
+        {/* gene track */}
+        <rect x="60" y={h-6} width="40" height="4" rx="2" fill={fg}/>
+        <rect x="110" y={h-6} width="30" height="4" rx="2" fill={fg}/>
+        <line x1="100" x2="110" y1={h-4} y2={h-4} stroke={fg} strokeWidth="1"/>
+        <text x="60" y={h+0} fontFamily="JetBrains Mono" fontSize="0" fill={muted}> </text>
+      </svg>
+    </PreviewCard>
+  );
+}
+
+function UMAPPreview({ dark }){
+  const muted = dark?'#9E9C90':'#707974';
+  const fg = dark?'#F0EEE5':'#0F1614';
+  const clusters = [
+    { cx:80, cy:60, n:30, col:'#0E9384', name:'T cell' },
+    { cx:200, cy:50, n:25, col:'#EAA532', name:'B cell' },
+    { cx:140, cy:130, n:35, col:'#9C77C7', name:'Monocyte' },
+    { cx:230, cy:140, n:18, col:'#D9594C', name:'NK' },
+  ];
+  return (
+    <PreviewCard dark={dark} foot={<>UMAP 把高維基因表現壓到 2D，相似的細胞會自然靠在一起，便於分群與細胞型態註解。</>}>
+      <svg width="100%" viewBox="0 0 290 200" style={{ display:'block' }}>
+        {clusters.map((c,ci)=>(
+          <g key={ci}>
+            {[...Array(c.n)].map((_,i)=>{
+              const a = Math.random()*Math.PI*2;
+              const r = Math.random()*22 + 4;
+              return <circle key={i} cx={c.cx+Math.cos(a)*r} cy={c.cy+Math.sin(a)*r} r="2.5" fill={c.col} opacity=".75"/>;
+            })}
+            <text x={c.cx} y={c.cy-32} textAnchor="middle" fontFamily="JetBrains Mono" fontSize="10" fontWeight="700" fill={c.col}>{c.name}</text>
+          </g>
+        ))}
+        <text x="14" y="194" fontFamily="JetBrains Mono" fontSize="9" fill={muted}>UMAP-1</text>
+        <text x="14" y="184" fontFamily="JetBrains Mono" fontSize="9" fill={muted} transform="rotate(-90 14 184)">UMAP-2</text>
+      </svg>
+    </PreviewCard>
+  );
+}
+
+// expose
+Object.assign(window, {
+  COURSES, COURSE_GROUPS, CourseGlyph, AppHeader, TabBar,
+  HomeScreen, CoursesScreen, LessonDetailScreen,
+  PracticeScreen, ToolScreen, ProfileScreen,
+});
