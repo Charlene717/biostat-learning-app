@@ -15,35 +15,51 @@ const Icon = {
 // === Mobile dashboard ===
 window.MHome = function MHome({ onNav, onOpenTopic }) {
   const D = window.AppData;
-  const overall = D.topics.reduce((s, t) => s + t.progress, 0) / D.topics.length;
+  const UM = window.UserManager;
+  const fresh = UM ? UM.isFresh() : false;
+  const userName = UM ? UM.getActiveUser().name : '同學';
+  const prog = (t) => UM ? UM.topicProgress(t.id) : t.progress;
+  const overall = UM ? UM.overallProgress() : D.topics.reduce((s, t) => s + t.progress, 0) / D.topics.length;
   const C = 2 * Math.PI * 20;
   const dash = C * overall;
-  const inProgress = D.topics.filter(t => t.progress > 0 && t.progress < 1);
-  const recommend = inProgress[0];
+  const inProgress = D.topics.filter(t => prog(t) > 0 && prog(t) < 1);
+  const recommend = inProgress[0] || D.topics[0];
+
+  const qs = window.QuizStats ? window.QuizStats.getSummary() : { answered: 0, correct: 0, sessions: 0, accuracy: 0 };
+  const masteredCount = (window.QuizStats ? window.QuizStats.getReviewSuggestions() : []).filter(s => s.rate >= 0.8).length;
+
+  const hour = new Date().getHours();
+  const greet = hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
+  const today = new Date();
+  const dateStr = `${today.getMonth()+1} 月 ${today.getDate()} 日`;
 
   return (
     <>
       <div className="m-header">
         <div>
-          <div className="greet">5 月 25 日 · 週一</div>
-          <h1>早安，{window.UserManager ? window.UserManager.getActiveUser().name : 'Yuki'}</h1>
+          <div className="greet">{dateStr}</div>
+          <h1>{greet}，{userName}</h1>
         </div>
         <div className="avatar" onClick={() => window.openAccountModal && window.openAccountModal()}
-          style={{cursor: 'pointer', background: window.UserManager ? window.UserManager.getActiveUser().color : 'var(--ink)'}}>
-          {window.UserManager ? window.UserManager.getActiveUser().avatar : 'Y'}
+          style={{cursor: 'pointer', background: UM ? UM.getActiveUser().color : 'var(--ink)'}}>
+          {UM ? UM.getActiveUser().avatar : 'Y'}
         </div>
       </div>
 
       <div className="m-scroll">
         {/* Hero */}
         <div className="m-hero">
-          <div className="eyebrow">繼續上次的進度</div>
-          <h3>{recommend.zh} · 第 5 課</h3>
-          <div className="blurb">上次學到「{recommend.blurb}」。再 12 分鐘可完成本章節。</div>
+          <div className="eyebrow">{fresh ? '開始第一步' : '繼續上次的進度'}</div>
+          <h3>{fresh ? '選一個主題開始吧' : recommend.zh}</h3>
+          <div className="blurb">{fresh
+            ? '完成題目即可累積專屬於你的學習進度。'
+            : `上次學到「${recommend.blurb}」。`}</div>
           <div className="row">
-            <button onClick={() => onOpenTopic(recommend.id)}>繼續 →</button>
+            <button onClick={() => fresh ? onNav('lib') : onOpenTopic(recommend.id)}>
+              {fresh ? '瀏覽主題 →' : '繼續 →'}
+            </button>
             <span style={{fontSize: 12, color: 'rgba(255,255,255,.6)', fontFamily:'var(--f-mono)'}}>
-              {Math.round(recommend.progress*100)}%
+              {Math.round(prog(recommend)*100)}%
             </span>
           </div>
           <svg className="ring" viewBox="0 0 56 56">
@@ -58,28 +74,28 @@ window.MHome = function MHome({ onNav, onOpenTopic }) {
           </svg>
         </div>
 
-        {/* Stats */}
+        {/* Stats — real per-user */}
         <div className="m-section">
           <div className="m-stats">
             <div className="m-stat">
-              <div className="k">本週時數</div>
-              <div className="v">4.2<span style={{fontSize:12, color:'var(--ink-3)'}}>h</span></div>
-              <div className="d">+38% vs 上週</div>
+              <div className="k">完成 Session</div>
+              <div className="v">{qs.sessions}<span style={{fontSize:12, color:'var(--ink-3)'}}>次</span></div>
+              <div className="d">測驗練習</div>
             </div>
             <div className="m-stat">
               <div className="k">正確率</div>
-              <div className="v">78<span style={{fontSize:12, color:'var(--ink-3)'}}>%</span></div>
-              <div className="d">過去 30 題</div>
+              <div className="v">{qs.answered > 0 ? Math.round(qs.accuracy*100) : '—'}<span style={{fontSize:12, color:'var(--ink-3)'}}>{qs.answered > 0 ? '%' : ''}</span></div>
+              <div className="d">{qs.correct}/{qs.answered} 題</div>
             </div>
             <div className="m-stat">
-              <div className="k">連續天數</div>
-              <div className="v">12<span style={{fontSize:12, color:'var(--ink-3)'}}>天</span></div>
-              <div className="d">🔥 個人最佳</div>
+              <div className="k">作答題數</div>
+              <div className="v">{qs.answered}<span style={{fontSize:12, color:'var(--ink-3)'}}>題</span></div>
+              <div className="d">累積回答</div>
             </div>
             <div className="m-stat">
               <div className="k">熟練主題</div>
-              <div className="v">3<span style={{fontSize:12, color:'var(--ink-3)'}}>/9</span></div>
-              <div className="d">≥ 80% 完成</div>
+              <div className="v">{masteredCount}<span style={{fontSize:12, color:'var(--ink-3)'}}>/{D.topics.length}</span></div>
+              <div className="d">≥ 80% 正確率</div>
             </div>
           </div>
         </div>
@@ -90,7 +106,7 @@ window.MHome = function MHome({ onNav, onOpenTopic }) {
             <h2>繼續學習</h2>
             <span className="link" onClick={() => onNav('lib')}>查看全部 ›</span>
           </div>
-          {inProgress.slice(0, 3).map(t => (
+          {inProgress.length > 0 ? inProgress.slice(0, 3).map(t => (
             <div key={t.id} className="m-topic" onClick={() => onOpenTopic(t.id)}>
               <div className="no">{t.no}</div>
               <div className="titles">
@@ -98,13 +114,26 @@ window.MHome = function MHome({ onNav, onOpenTopic }) {
                 <div className="en">{t.en}</div>
               </div>
               <div style={{textAlign:'right'}}>
-                <div className="pct">{Math.round(t.progress*100)}%</div>
+                <div className="pct">{Math.round(prog(t)*100)}%</div>
                 <div style={{width: 48, marginTop: 4}}>
-                  <div className="progress"><i style={{width: `${t.progress*100}%`}} /></div>
+                  <div className="progress"><i style={{width: `${prog(t)*100}%`}} /></div>
                 </div>
               </div>
             </div>
-          ))}
+          )) : (
+            <div style={{
+              padding: '20px 16px', textAlign: 'center',
+              background: 'var(--panel)', border: '1px solid var(--line)',
+              borderRadius: 14, color: 'var(--ink-3)', fontSize: 13
+            }}>
+              還沒有進行中的主題<br/>
+              <button onClick={() => onNav('lib')} style={{
+                marginTop: 10, background: 'var(--ink)', color: 'var(--bg)',
+                border: 0, borderRadius: 999, padding: '8px 16px',
+                fontSize: 12.5, fontWeight: 500, fontFamily: 'inherit', cursor: 'pointer'
+              }}>瀏覽主題庫 →</button>
+            </div>
+          )}
         </div>
 
         {/* Daily challenge */}
@@ -122,22 +151,31 @@ window.MHome = function MHome({ onNav, onOpenTopic }) {
         </div>
 
         {/* Activity */}
-        <div className="m-section">
-          <div className="m-section-head">
-            <h2>本週活動</h2>
-            <span className="link">分鐘 / 天</span>
-          </div>
-          <div className="m-activity">
-            {D.activity.map((a, i) => {
-              const h = Math.max(4, (a.mins / 60) * 70);
-              return (
-                <div key={a.day} className={`bar ${i === 5 ? 'today' : ''}`} style={{height: h}}>
-                  <span className="lbl">{a.day}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {(() => {
+          const hist = window.QuizStats ? window.QuizStats.getRecentHistory(7) : [];
+          if (hist.length === 0) return null;
+          return (
+            <div className="m-section">
+              <div className="m-section-head">
+                <h2>近期測驗表現</h2>
+                <span className="link">最近 {hist.length} 次</span>
+              </div>
+              <div className="m-activity">
+                {hist.map((hh, i) => {
+                  const p = hh.total > 0 ? hh.correct / hh.total : 0;
+                  return (
+                    <div key={i} className="bar" style={{
+                      height: Math.max(8, p * 70),
+                      background: p >= 0.75 ? 'var(--good)' : p >= 0.6 ? 'var(--accent)' : 'var(--warn)'
+                    }}>
+                      <span className="lbl">{Math.round(p*100)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </>
   );
@@ -182,8 +220,8 @@ window.MLib = function MLib({ onOpenTopic }) {
               <div className="en">{t.en}</div>
               <div className="blurb">{t.blurb}</div>
               <div className="meta">
-                <div className="progress"><i style={{width: `${t.progress*100}%`}} /></div>
-                <span style={{color: 'var(--ink)', fontWeight: 600}}>{Math.round(t.progress*100)}%</span>
+                <div className="progress"><i style={{width: `${(window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress)*100}%`}} /></div>
+                <span style={{color: 'var(--ink)', fontWeight: 600}}>{Math.round((window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress)*100)}%</span>
                 <span>· {t.lessons} 課</span>
               </div>
             </div>
@@ -914,8 +952,8 @@ window.MTopicDetail = function MTopicDetail({ topicId, onBack, chartStyle, onNav
           <div className="m-stats">
             <div className="m-stat">
               <div className="k">進度</div>
-              <div className="v">{Math.round(t.progress*100)}<span style={{fontSize:12, color:'var(--ink-3)'}}>%</span></div>
-              <div className="d">{t.lessons - Math.floor(t.lessons*t.progress)} 課剩餘</div>
+              <div className="v">{Math.round((window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress)*100)}<span style={{fontSize:12, color:'var(--ink-3)'}}>%</span></div>
+              <div className="d">{t.lessons - Math.floor(t.lessons*(window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress))} 課剩餘</div>
             </div>
             <div className="m-stat">
               <div className="k">難度</div>

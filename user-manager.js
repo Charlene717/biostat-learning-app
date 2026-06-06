@@ -66,12 +66,35 @@
       name: n,
       avatar: AVATARS[idx % AVATARS.length],
       color: COLORS[idx % COLORS.length],
-      created: Date.now()
+      created: Date.now(),
+      fresh: true   // brand-new account → zero progress everywhere
     };
     d.users.push(u);
     d.activeId = u.id; // switch to the new user
     saveUsers(d);
     return u;
+  }
+
+  // Is the active user a fresh (clean) account? Fresh users show zero progress
+  // for the demo-seeded topic progress / dashboard stats.
+  function isFresh(id) {
+    const d = ensureInit();
+    const u = d.users.find(x => x.id === (id || d.activeId));
+    return !!(u && u.fresh);
+  }
+
+  // Per-user topic progress (0..1). Fresh users start at 0; the original
+  // (migrated) account keeps the demo values defined in data.js.
+  function topicProgress(topicId) {
+    if (isFresh()) return 0;
+    const t = (window.AppData && window.AppData.topics || []).find(x => x.id === topicId);
+    return t ? (t.progress || 0) : 0;
+  }
+  function overallProgress() {
+    if (isFresh()) return 0;
+    const topics = (window.AppData && window.AppData.topics) || [];
+    if (!topics.length) return 0;
+    return topics.reduce((s, t) => s + (t.progress || 0), 0) / topics.length;
   }
 
   function renameUser(id, name) {
@@ -198,6 +221,7 @@
     AVATARS, COLORS,
     getUsers, getActiveId, getActiveUser, getActiveStatsKey,
     addUser, renameUser, deleteUser, switchUser,
+    isFresh, topicProgress, overallProgress,
     userSummary, exportActive, downloadActive, importPayload,
     ensureInit
   };

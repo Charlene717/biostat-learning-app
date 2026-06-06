@@ -61,29 +61,44 @@ window.Sidebar = function Sidebar({ active, onNav }) {
 // ============ Dashboard ============
 window.Dashboard = function Dashboard({ onOpenTopic, onNav }) {
   const D = window.AppData;
-  // overall progress
-  const overall = D.topics.reduce((s, t) => s + t.progress, 0) / D.topics.length;
+  const UM = window.UserManager;
+  const fresh = UM ? UM.isFresh() : false;
+  const userName = UM ? UM.getActiveUser().name : '同學';
+
+  // per-user progress helper
+  const prog = (t) => UM ? UM.topicProgress(t.id) : t.progress;
+  const overall = UM ? UM.overallProgress()
+    : D.topics.reduce((s, t) => s + t.progress, 0) / D.topics.length;
   const C = 2 * Math.PI * 48;
   const dash = C * overall;
 
-  // recommended = next incomplete with highest progress
-  const recommend = [...D.topics].sort((a, b) =>
-    b.progress > 0 && b.progress < 1
-      ? (b.progress - a.progress)
-      : 0
-  ).filter(t => t.progress > 0 && t.progress < 1)[0] || D.topics[0];
+  // quiz-derived stats (real, per-user)
+  const qs = window.QuizStats ? window.QuizStats.getSummary() : { answered: 0, correct: 0, sessions: 0, accuracy: 0 };
+  const masteredCount = (window.QuizStats ? window.QuizStats.getReviewSuggestions() : [])
+    .filter(s => s.rate >= 0.8).length;
+
+  // in-progress topics for this user
+  const inProgress = D.topics.filter(t => prog(t) > 0 && prog(t) < 1);
+  const recommend = [...inProgress].sort((a, b) => prog(b) - prog(a))[0] || D.topics[0];
+
+  const hour = new Date().getHours();
+  const greet = hour < 11 ? '早安' : hour < 18 ? '午安' : '晚安';
 
   return (
     <div>
       <div className="page-head">
         <div>
           <div className="crumb">2026 · 春季學習計畫</div>
-          <h1>早安，準備好繼續了嗎？</h1>
-          <div className="sub">今天還有 1 個未完成的任務 · 預計 20 分鐘</div>
+          <h1>{greet}，{userName}！</h1>
+          <div className="sub">
+            {fresh
+              ? '歡迎加入！從任一主題或每日一題開始你的學習旅程。'
+              : '今天還有 1 個未完成的任務 · 預計 20 分鐘'}
+          </div>
         </div>
         <div className="row">
-          <button className="btn ghost sm">月度報告</button>
-          <button className="btn sm">開始今日</button>
+          <button className="btn ghost sm" onClick={() => window.openAccountModal && window.openAccountModal()}>切換帳號</button>
+          <button className="btn sm" onClick={() => onNav && onNav('lib')}>開始學習</button>
         </div>
       </div>
 
@@ -92,12 +107,14 @@ window.Dashboard = function Dashboard({ onOpenTopic, onNav }) {
           {/* Hero */}
           <div className="hero">
             <div>
-              <div className="eyebrow">繼續上次的進度</div>
-              <h2>{recommend.zh} · {Math.round(recommend.progress*100)}% 完成</h2>
-              <p>上次學到「{recommend.blurb}」。再花 12 分鐘可完成本章節，並解鎖下一個練習集。</p>
+              <div className="eyebrow">{fresh ? '開始第一步' : '繼續上次的進度'}</div>
+              <h2>{fresh ? '選一個主題開始吧' : `${recommend.zh} · ${Math.round(prog(recommend)*100)}% 完成`}</h2>
+              <p>{fresh
+                ? '18 個主題、互動實驗室、33 個計算工具與題庫等你探索。完成題目即可累積專屬於你的學習進度。'
+                : `上次學到「${recommend.blurb}」。再花 12 分鐘可完成本章節，並解鎖下一個練習集。`}</p>
               <div className="row" style={{gap: 8}}>
-                <button className="btn accent" onClick={() => onOpenTopic && onOpenTopic(recommend.id)}>
-                  繼續學習 →
+                <button className="btn accent" onClick={() => fresh ? (onNav && onNav('lib')) : (onOpenTopic && onOpenTopic(recommend.id))}>
+                  {fresh ? '瀏覽主題庫 →' : '繼續學習 →'}
                 </button>
                 <button className="btn ghost" onClick={() => onNav && onNav('concept')}>互動模擬</button>
               </div>
@@ -114,27 +131,27 @@ window.Dashboard = function Dashboard({ onOpenTopic, onNav }) {
             </svg>
           </div>
 
-          {/* Stats */}
+          {/* Stats — real per-user */}
           <div className="stat-row">
             <div className="stat">
-              <div className="k">本週時數</div>
-              <div className="v">4.2<span style={{fontSize:14, color:'var(--ink-3)'}}>h</span></div>
-              <div className="d">+38% vs 上週</div>
+              <div className="k">完成 Session</div>
+              <div className="v">{qs.sessions}</div>
+              <div className="d">測驗練習次數</div>
             </div>
             <div className="stat">
-              <div className="k">完成卡片</div>
-              <div className="v">87</div>
-              <div className="d">總共 142 張</div>
+              <div className="k">作答題數</div>
+              <div className="v">{qs.answered}</div>
+              <div className="d">累積回答</div>
             </div>
             <div className="stat">
               <div className="k">測驗正確率</div>
-              <div className="v">78<span style={{fontSize:14, color:'var(--ink-3)'}}>%</span></div>
-              <div className="d">過去 30 題</div>
+              <div className="v">{qs.answered > 0 ? Math.round(qs.accuracy*100) : '—'}<span style={{fontSize:14, color:'var(--ink-3)'}}>{qs.answered > 0 ? '%' : ''}</span></div>
+              <div className="d">{qs.correct} / {qs.answered} 題</div>
             </div>
             <div className="stat">
               <div className="k">熟練主題</div>
-              <div className="v">3<span style={{fontSize:14, color:'var(--ink-3)'}}>/9</span></div>
-              <div className="d">≥ 80% 完成</div>
+              <div className="v">{masteredCount}<span style={{fontSize:14, color:'var(--ink-3)'}}>/{D.topics.length}</span></div>
+              <div className="d">≥ 80% 正確率</div>
             </div>
           </div>
 
@@ -142,77 +159,41 @@ window.Dashboard = function Dashboard({ onOpenTopic, onNav }) {
           <div className="card">
             <div className="card-head">
               <h3>繼續學習</h3>
-              <span className="meta">最近 · 3</span>
+              <span className="meta">{inProgress.length > 0 ? `最近 · ${Math.min(3, inProgress.length)}` : '尚未開始'}</span>
             </div>
-            <div className="col" style={{gap: 8}}>
-              {D.topics.filter(t => t.progress > 0 && t.progress < 1).slice(0, 3).map(t => (
-                <div key={t.id} className="topic-card" onClick={() => onOpenTopic && onOpenTopic(t.id)}>
-                  <span className="no">{t.no}</span>
-                  <div className="titles">
-                    <div className="zh">{t.zh}</div>
-                    <div className="en">{t.en} · {t.lessons} lessons</div>
-                  </div>
-                  <div className="right">
-                    <div className="pct">{Math.round(t.progress*100)}%</div>
-                    <div style={{marginTop:4, width: 80}}>
-                      <div className="progress"><i style={{width: `${t.progress*100}%`}} /></div>
+            {inProgress.length > 0 ? (
+              <div className="col" style={{gap: 8}}>
+                {inProgress.slice(0, 3).map(t => (
+                  <div key={t.id} className="topic-card" onClick={() => onOpenTopic && onOpenTopic(t.id)}>
+                    <span className="no">{t.no}</span>
+                    <div className="titles">
+                      <div className="zh">{t.zh}</div>
+                      <div className="en">{t.en} · {t.lessons} lessons</div>
+                    </div>
+                    <div className="right">
+                      <div className="pct">{Math.round(prog(t)*100)}%</div>
+                      <div style={{marginTop:4, width: 80}}>
+                        <div className="progress"><i style={{width: `${prog(t)*100}%`}} /></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Activity */}
-          <div className="card">
-            <div className="card-head">
-              <h3>本週活動</h3>
-              <span className="meta">分鐘 / 天</span>
-            </div>
-            <div className="activity" style={{marginBottom: 22}}>
-              {D.activity.map((a, i) => {
-                const h = Math.max(4, (a.mins / 60) * 80);
-                const today = i === 5;
-                return (
-                  <div key={a.day} className={`bar ${today ? 'today' : ''}`} style={{height: h}}>
-                    <span className="lbl">{a.day}</span>
-                  </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{padding: '18px 0', textAlign: 'center', color: 'var(--ink-3)', fontSize: 13}}>
+                還沒有進行中的主題。
+                <button className="btn ghost sm" style={{marginLeft: 10}} onClick={() => onNav && onNav('lib')}>瀏覽主題庫</button>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="col">
-          {/* Agenda */}
-          <div className="card">
-            <div className="card-head">
-              <h3>學習行事曆</h3>
-              <span className="meta">本週</span>
-            </div>
-            {D.agenda.map((it, i) => (
-              <div key={i} className={`agenda-item ${it.done ? 'done' : ''}`}>
-                <div className="check">
-                  {it.done && (
-                    <svg width="10" height="10" viewBox="0 0 10 10">
-                      <path d="M2 5l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <div className="title">{it.title}</div>
-                  <div className="meta">{it.time}</div>
-                </div>
-                <div className="dur">{it.dur}</div>
-              </div>
-            ))}
-          </div>
-
           {/* Daily card */}
           <div className="card" style={{background: 'var(--accent-soft)', borderColor: 'transparent'}}>
             <div className="card-head">
               <h3 style={{color:'var(--accent-ink)'}}>每日一題</h3>
-              <span className="meta" style={{color:'var(--accent-ink)', opacity:.7}}>Day 12</span>
+              <span className="meta" style={{color:'var(--accent-ink)', opacity:.7}}>挑戰</span>
             </div>
             <p style={{margin: '0 0 14px', fontSize: 13, color:'var(--accent-ink)', lineHeight: 1.55}}>
               一個檢定的 p-value = 0.03，下列何者是<strong>錯誤</strong>的詮釋？
@@ -231,6 +212,26 @@ window.Dashboard = function Dashboard({ onOpenTopic, onNav }) {
             </div>
             <div style={{fontSize: 12, color:'var(--ink-3)', lineHeight: 1.55}}>
               標準誤 = 標準差除以樣本數平方根。它描述「樣本平均」這個估計量的不確定性，不是個別觀測值的離散度。
+            </div>
+          </div>
+
+          {/* Account quick card */}
+          <div className="card">
+            <div className="card-head">
+              <h3>目前帳號</h3>
+              <span className="meta">{UM ? UM.getUsers().length : 1} 個帳號</span>
+            </div>
+            <div className="row" style={{gap: 10}}>
+              <div className="acc-avatar" style={{width: 38, height: 38, borderRadius: 11, background: UM ? UM.getActiveUser().color : 'var(--ink)'}}>
+                {UM ? UM.getActiveUser().avatar : 'μ'}
+              </div>
+              <div style={{flex: 1}}>
+                <div style={{fontWeight: 600, fontSize: 14}}>{userName}</div>
+                <div style={{fontSize: 11, color: 'var(--ink-3)'}}>
+                  {qs.sessions > 0 ? `${qs.sessions} 次練習 · 正確率 ${Math.round(qs.accuracy*100)}%` : '尚無紀錄'}
+                </div>
+              </div>
+              <button className="btn ghost sm" onClick={() => window.openAccountModal && window.openAccountModal()}>管理</button>
             </div>
           </div>
         </div>
@@ -300,8 +301,8 @@ window.Library = function Library({ onOpenTopic }) {
               </span>
             </div>
             <div className="foot" style={{marginTop: 8}}>
-              <div className="progress"><i style={{width: `${t.progress*100}%`}} /></div>
-              <span className="pct">{Math.round(t.progress*100)}%</span>
+              <div className="progress"><i style={{width: `${(window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress)*100}%`}} /></div>
+              <span className="pct">{Math.round((window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress)*100)}%</span>
             </div>
           </div>
         ))}
@@ -1160,10 +1161,10 @@ window.TopicDetail = function TopicDetail({ topicId, onBack, chartStyle, onNav, 
           <div className="card">
             <div className="card-head">
               <h3>進度</h3>
-              <span className="meta">{Math.round(t.progress*100)}%</span>
+              <span className="meta">{Math.round((window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress)*100)}%</span>
             </div>
             <div className="progress" style={{marginBottom: 12}}>
-              <i style={{width: `${t.progress*100}%`}} />
+              <i style={{width: `${(window.UserManager ? window.UserManager.topicProgress(t.id) : t.progress)*100}%`}} />
             </div>
             <button className="btn accent" style={{width: '100%'}}
               onClick={() => onOpenLesson ? onOpenLesson(0) : onNav('concept')}>
