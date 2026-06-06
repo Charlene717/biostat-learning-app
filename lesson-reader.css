@@ -1,0 +1,307 @@
+/* lesson-reader.css — typography & blocks for the lesson reader */
+
+/* Progress strip */
+.lr-progress {
+  padding: 0 20px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.lr-progress-text {
+  font-family: var(--f-mono); font-size: 10.5px;
+  color: var(--ink-3); white-space: nowrap;
+}
+.lr-progress-bar {
+  flex: 1; height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.lr-progress-bar i {
+  display: block; height: 100%;
+  background: var(--accent);
+  transition: width .3s;
+}
+
+/* Header */
+.lr-header {
+  padding: 0 20px 14px;
+}
+.lr-eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.lr-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-family: var(--f-display);
+}
+
+/* Body */
+.lr-body {
+  padding: 0 20px 32px;
+  display: flex; flex-direction: column;
+  gap: 14px;
+}
+
+.lr-p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--ink);
+  letter-spacing: -0.002em;
+}
+
+.lr-h {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0 -4px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+}
+
+.lr-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.lr-list li {
+  padding-left: 20px;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.lr-list li::before {
+  content: "";
+  position: absolute;
+  left: 4px; top: 10px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.lr-list li strong {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--accent-soft);
+  padding: 0 4px;
+  border-radius: 3px;
+  color: var(--accent-ink);
+}
+
+/* Callouts: intuition / warn / example */
+.lr-callout {
+  border-radius: 14px;
+  padding: 14px 16px;
+  position: relative;
+}
+.lr-callout-head {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--f-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.lr-icon {
+  display: inline-grid; place-items: center;
+  width: 20px; height: 20px;
+  border-radius: 6px;
+}
+.lr-callout-body {
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.lr-callout.intuition {
+  background: oklch(0.96 0.04 240 / 0.6);
+  color: oklch(0.30 0.10 240);
+}
+[data-theme="dark"] .lr-callout.intuition {
+  background: oklch(0.20 0.05 240 / 0.5);
+  color: oklch(0.85 0.05 240);
+}
+.lr-callout.intuition .lr-icon {
+  background: oklch(0.92 0.06 240);
+  color: oklch(0.40 0.13 240);
+}
+
+.lr-callout.warn {
+  background: oklch(0.95 0.05 65 / 0.7);
+  color: oklch(0.35 0.10 60);
+}
+[data-theme="dark"] .lr-callout.warn {
+  background: oklch(0.22 0.06 60 / 0.5);
+  color: oklch(0.88 0.07 70);
+}
+.lr-callout.warn .lr-icon {
+  background: oklch(0.90 0.10 65);
+  color: oklch(0.42 0.14 60);
+}
+
+.lr-callout.example {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.lr-callout.example .lr-icon {
+  background: var(--bg);
+  color: var(--ink-2);
+}
+.lr-callout.example .lr-callout-body {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
+/* Key takeaway */
+.lr-key {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.lr-key-mark {
+  background: var(--accent);
+  color: white;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  display: grid; place-items: center;
+  font-weight: 600;
+  text-align: center;
+}
+.lr-key-body {
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+/* Formula */
+.lr-formula {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+.lr-formula-label {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+}
+.lr-formula-tex {
+  font-family: var(--f-mono);
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+/* Compare table */
+.lr-compare {
+  display: grid;
+  gap: 8px;
+}
+.lr-compare-col {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.lr-compare-head {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--accent-soft);
+  padding-bottom: 6px;
+}
+.lr-compare-body {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+}
+
+/* Mobile: compare always single column on narrow screens — auto via grid-template inline */
+
+/* Chart embed */
+.lr-chart {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 8px;
+}
+
+/* Quote */
+.lr-quote {
+  margin: 0;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+  font-style: italic;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* Nav */
+.lr-nav {
+  padding: 8px 20px 28px;
+  display: flex;
+  gap: 10px;
+}
+.lr-nav-btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+.lr-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.lr-nav-btn.primary {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+  font-weight: 600;
+}
+
+/* Desktop tweaks */
+@media (min-width: 900px) {
+  .lr-progress, .lr-header, .lr-body, .lr-nav {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .lr-title { font-size: 28px; }
+  .lr-p { font-size: 15px; }
+  .lr-list li { font-size: 14.5px; }
+}

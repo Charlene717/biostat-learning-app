@@ -1,108 +1,128 @@
-# BioLearn · 生物資訊學習 App
+# 生物統計 · Biostat Lab
 
-> 一款讓生物資訊變得直觀的互動式學習 App。從 DNA 序列、序列比對，到系統發生樹、CRISPR、機器學習，邊看、邊做、邊學。
+> 深入淺出的互動式生物統計學習 App — 涵蓋從描述統計到 Cox 比例風險的 18 個主題，內建互動實驗室、33 個臨床計算機、混合題型題庫與學習進度追蹤。
 
-以 iPhone 風格呈現的純前端原型，採用乾淨的科學感美學（青松石主色 + 米白／深色雙模式）。整個 App 用 React（透過瀏覽器內 Babel 編譯的 JSX）撰寫，**無需建置工具、無需後端**，打開 `index.html` 即可執行。
+繁體中文介面，搭配英文術語。專為醫學院 / 公衛 / 臨床研究學習者設計。
 
-**🔗 線上展示：https://charlene717.github.io/bioinformatics-learning-app/**
+**🔗 線上版：[charlene717.github.io/biostat-learning-app](https://charlene717.github.io/biostat-learning-app/)**
 
----
-
-## ✨ 功能特色
-
-### 📚 課程（18 章 · 90+ 節）
-深入淺出的完整教材，分成 7 大學習路線：
-
-| 路線 | 章節 |
+| 版本 | 連結 |
 |------|------|
-| **基礎** | 生資導論、DNA·RNA·蛋白質、序列比對 |
-| **結構與功能** | 蛋白質結構、NGS 次世代定序、變異與基因型 |
-| **表現與調控** | 基因表現 RNA-seq、單細胞 scRNA-seq、表觀遺傳學 |
-| **演化與群體** | 系統發生樹、群體遺傳學 |
-| **應用領域** | 癌症基因組學、微生物群、CRISPR 基因編輯 |
-| **程式與工具** | Python for Biology、R 與生統、雲端與工作流 |
-| **進階** | 系統生物學、生物機器學習 |
-
-每一節都有「Hook 直覺先行 → 編號段落講解 → 重點整理 → 嵌入式視覺化 → 上下節導航」的學習節奏，並附 40+ 種教學視覺化（雙螺旋、火山圖、UMAP、Bootstrap、CNN-DNA、ROC vs PR…）。
-
-### 🧪 互動工具
-- **序列比對 Sandbox** — Needleman-Wunsch 全域比對動畫
-- **BLAST 模擬搜尋** — query → 掃描資料庫動畫 → E-value 排序結果剖析
-- **GC 含量計算** — GC / AT / Tm + 鹼基組成
-- **反向互補** — 互補 → 反轉 步驟拆解
-- **密碼子翻譯** — 6 個閱讀框並列 + ORF 偵測
-- **Tm 計算** — Wallace / Marmur 雙公式
-- **密碼子表** — 64 → 20 對應
-- **HWE 計算** — 基因型 → p、q + χ² 檢定
-
-### 🎯 測驗
-- 每日小測（跨章節混合）
-- 期末總測（隨機 20 題）
-- 依章節小測（110+ 題題庫，每題附解析）
-
-### 🃏 學習輔助
-- **單字卡** — 90+ 張生資術語，含詳解與章節直達連結
-- **書籤** — 收藏單字卡與小節（localStorage 持久化）
-- **間隔重複 SRS** — 4 級評分（類 SM-2 演算法）安排複習時程
-
-### 🎨 個人化（Tweaks）
-主色（青松石 / 靛藍 / 珊瑚 / 品紅）、深色模式、字級、連勝徽章顯隱。
+| 桌機 / 響應式 | [index.html](https://charlene717.github.io/biostat-learning-app/index.html) |
+| 手機版 | [mobile.html](https://charlene717.github.io/biostat-learning-app/mobile.html) |
 
 ---
 
-## 🚀 開始使用
+## ✨ 功能總覽
 
-直接造訪線上版本：**https://charlene717.github.io/bioinformatics-learning-app/**
+| 模組 | 說明 |
+|------|------|
+| **儀表板 Dashboard** | 整體進度環、本週時數、繼續學習、學習行事曆、每日一題、活動長條圖 |
+| **主題庫 Library** | 18 個主題卡片，可依標籤（基礎 / 推論 / 建模 / 進階 / 臨床）篩選 |
+| **互動概念 Concepts** | 常態 / 二項 / 卜瓦松分布，拖滑桿即時改變參數與機率 |
+| **實驗室 Lab** | 6 個深度互動工具：中央極限定理、信賴區間覆蓋、α/β/檢定力、盛行率→PPV、貝氏更新、極端值衝擊 |
+| **課程閱讀 Lessons** | 每個主題的多課內容，深入淺出，內嵌互動元件與圖表 |
+| **練習測驗 Quiz** | 60+ 題、4 種題型（單選 / 複選 / 是非 / 計算）、進度追蹤、錯題紀錄、建議複習主題 |
+| **速查卡片 Cheat Sheet** | 23 張高密度公式卡片，可關鍵字搜尋 |
+| **計算機 Calculators** | 9 類 33 個工具：樣本數、假設檢定、信賴區間、效應量、診斷、迴歸與存活、機率分布、一致性、多重比較 |
+| **臨床情境 Case Study** | 真實 RCT 案例 + Kaplan-Meier 曲線 + 判讀挑戰 |
 
-或在本機執行（無需安裝任何套件）：
+### Tweaks（工具列開啟）
+主題色（Clinical / Indigo / Coral / Graphite）· 字體（Plex / Geist / 襯線）· 深色模式 · 難度 · 圖表類型 · 跳轉畫面
+
+---
+
+## 🖥 兩種版本
+
+| 檔案 | 版本 | 說明 |
+|------|------|------|
+| `index.html` | **桌機 / 響應式** | 側邊導覽 + 寬版佈局 |
+| `mobile.html` | **手機** | iOS 邊框 + 底部 Tab Bar，手機原生重新設計 |
+
+兩者共用同一份資料與邏輯，無需 build 步驟，純靜態檔案。
+
+---
+
+## 🚀 本地開啟
+
+因為使用 ES module 與 `fetch` 載入分檔，建議用本地伺服器開啟（不要直接雙擊 `file://`）：
 
 ```bash
-# 方法一：直接用瀏覽器開啟
-open index.html        # macOS
-# 或 start index.html  # Windows
-
-# 方法二：用本機伺服器（避免某些瀏覽器的 file:// 限制）
+# Python 3
 python3 -m http.server 8000
-# 然後瀏覽 http://localhost:8000
+
+# 或 Node
+npx serve
 ```
 
-> 首次載入需連網（從 CDN 取得 React、Babel、Google Fonts）。
+然後瀏覽 `http://localhost:8000/index.html` 或 `mobile.html`。
 
 ---
 
-## 🗂 專案結構
+## 🌐 部署到 GitHub Pages
+
+1. 推上 GitHub 後，到 repo **Settings → Pages**
+2. Source 選 `Deploy from a branch`，Branch 選 `main` / `(root)`
+3. 儲存後等待數分鐘，網址為：
+   ```
+   https://charlene717.github.io/biostat-learning-app/index.html
+   ```
+
+---
+
+## 📁 專案結構
 
 ```
-.
-├── index.html        # 進入點：字體、主題變數、腳本載入、Tweaks 預設
-├── app.jsx           # App 殼層、Tab 路由、Tweaks 面板
-├── screens.jsx       # 各畫面：首頁 / 課程 / 課程詳細 / 練習 / 我的
-├── lessons.jsx       # 18 章教材內容 + 教學視覺化 LessonViz
-├── widgets.jsx       # 共用元件、序列比對、單字卡、Quiz
-├── blast.jsx         # BLAST 模擬搜尋工具
-├── tools.jsx         # GC / 反向互補 / 密碼子翻譯 / Tm / HWE 計算機
-├── quiz-bank.jsx     # 110+ 題題庫（依章節分類）
-├── flashcards.jsx    # 90+ 張單字卡資料
-├── study.jsx         # 書籤 + 間隔重複 SRS
-├── ios-frame.jsx     # iPhone 裝置外框元件
-└── tweaks-panel.jsx  # Tweaks 面板殼層
+index.html            桌機版進入點
+mobile.html           手機版進入點
+
+# 資料層（純 JS）
+data.js               主題、卡片、行事曆、活動資料
+lessons.js            課程內容（含內嵌互動）
+quiz-bank.js          測驗題庫（60+ 題，4 種題型）
+quiz-stats.js         進度 / 錯題 / 建議複習（localStorage）
+calc-math.js          統計分布函數（逆常態、t/χ²/F CDF、Wilson CI…）
+
+# 視覺與圖表
+styles.css            桌機樣式 + 設計系統 tokens
+mobile-styles.css     手機樣式
+lesson-reader.css     課程閱讀樣式
+interactives.css      互動元件樣式
+charts.jsx            分布圖、KM、ROC、迴歸散布圖
+interactives.jsx      6 個互動實驗工具
+
+# 畫面（React，inline JSX via Babel）
+screens.jsx           桌機畫面
+mobile-screens.jsx    手機畫面
+lab-screens.jsx       實驗室畫面
+calculators.jsx       33 個計算機
+quiz-engine.jsx       測驗題型渲染與評分
+lesson-reader.jsx     課程閱讀器
+app.jsx               桌機主程式 + Tweaks
+mobile-app.jsx        手機主程式 + iOS 邊框 + Tweaks
+
+# 元件
+ios-frame.jsx         iPhone 裝置邊框
+tweaks-panel.jsx      Tweaks 面板
 ```
 
 ---
 
 ## 🛠 技術
 
-- **React 18**（UMD）+ **Babel Standalone**（瀏覽器內 JSX 編譯）
-- 純前端、無後端、無建置流程
-- 字體：Space Grotesk · Manrope · JetBrains Mono · Noto Sans TC
-- 狀態持久化：`localStorage`（書籤、SRS、Tweaks）
+- **React 18**（透過 CDN + Babel standalone，inline JSX，無需打包）
+- **純 CSS**（CSS variables / grid / oklch 色彩）
+- **localStorage** 持久化學習進度
+- 所有統計計算使用精確分布函數，非單一查表值
+
+---
+
+## ⚠️ 免責聲明
+
+本 App 為**教學用途**。計算結果採用標準近似公式，正式研究或臨床決策請使用經驗證的統計軟體（R、SAS、Stata 等）並諮詢統計專家。
 
 ---
 
 ## 📄 授權
 
-教育用途範例專案。歡迎自由 fork、修改、用於教學。
-
----
-
-*生物資訊不只是工具，更是用工具去問正確的問題。*
+MIT License — 歡迎自由使用、修改與分享。

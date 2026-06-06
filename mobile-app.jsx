@@ -1,7 +1,7 @@
-// app.jsx - main shell + tweaks integration
+// mobile-app.jsx — mobile shell + iOS frame + tweaks
 const { useState, useEffect } = React;
 
-const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+const M_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "theme": "clinical",
   "font": "plex",
   "dark": false,
@@ -10,7 +10,6 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "screen": "home"
 }/*EDITMODE-END*/;
 
-// Theme accent definitions (oklch tokens applied to :root)
 const THEMES = {
   clinical: { accent: 'oklch(0.58 0.10 175)', soft: 'oklch(0.94 0.04 175)', ink: 'oklch(0.32 0.08 175)' },
   indigo:   { accent: 'oklch(0.50 0.12 265)', soft: 'oklch(0.94 0.04 265)', ink: 'oklch(0.34 0.10 265)' },
@@ -36,26 +35,17 @@ const FONTS = {
   }
 };
 
-// Map color swatch hex back to theme key
-const THEME_BY_SWATCH = {
-  '#0e8c8c': 'clinical',
-  '#3b4cca': 'indigo',
-  '#cf5a3e': 'rose',
-  '#3a3f4a': 'graphite'
-};
 const SWATCH_BY_THEME = {
-  clinical: '#0e8c8c',
-  indigo: '#3b4cca',
-  rose: '#cf5a3e',
-  graphite: '#3a3f4a'
+  clinical: '#0e8c8c', indigo: '#3b4cca', rose: '#cf5a3e', graphite: '#3a3f4a'
+};
+const THEME_BY_SWATCH = {
+  '#0e8c8c': 'clinical', '#3b4cca': 'indigo', '#cf5a3e': 'rose', '#3a3f4a': 'graphite'
 };
 
-function App() {
-  const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
-
+function MobileApp() {
+  const [tweaks, setTweak] = window.useTweaks(M_TWEAK_DEFAULTS);
   const [view, setView] = useState({ screen: tweaks.screen || 'home', topicId: null, lessonIdx: 0 });
 
-  // Apply theme + font tokens to :root
   useEffect(() => {
     const theme = THEMES[tweaks.theme] || THEMES.clinical;
     const font = FONTS[tweaks.font] || FONTS.plex;
@@ -69,71 +59,76 @@ function App() {
     document.body.setAttribute('data-theme', tweaks.dark ? 'dark' : 'light');
   }, [tweaks.theme, tweaks.font, tweaks.dark]);
 
-  // sync screen from Tweaks
   useEffect(() => {
     if (tweaks.screen && tweaks.screen !== view.screen && view.screen !== 'topic') {
       setView({ screen: tweaks.screen, topicId: null });
     }
   }, [tweaks.screen]);
 
-  const nav = (screen) => {
-    setView({ screen, topicId: null, lessonIdx: 0 });
-    setTweak('screen', screen);
-  };
+  const nav = (screen) => { setView({ screen, topicId: null, lessonIdx: 0 }); setTweak('screen', screen); };
   const openTopic = (topicId) => setView({ screen: 'topic', topicId, lessonIdx: 0 });
   const backToLib = () => setView({ screen: 'lib', topicId: null, lessonIdx: 0 });
   const openLesson = (idx) => setView(v => ({ screen: 'lesson', topicId: v.topicId, lessonIdx: idx }));
   const backToTopic = () => setView(v => ({ screen: 'topic', topicId: v.topicId, lessonIdx: 0 }));
 
-  // render screen
-  let content = null;
+  let body = null;
   switch (view.screen) {
-    case 'home':
-      content = <window.Dashboard onOpenTopic={openTopic} onNav={nav} />; break;
-    case 'lib':
-      content = <window.Library onOpenTopic={openTopic} />; break;
-    case 'concept':
-      content = <window.ConceptPage chartStyle={tweaks.chartStyle} />; break;
-    case 'lab':
-      content = <window.LabPage />; break;
-    case 'quiz':
-      content = <window.QuizPage difficulty={tweaks.difficulty} />; break;
-    case 'cheat':
-      content = <window.CheatPage />; break;
-    case 'calc':
-      content = <window.CalcPage />; break;
-    case 'case':
-      content = <window.CasePage />; break;
-    case 'topic':
-      content = <window.TopicDetail topicId={view.topicId} onBack={backToLib}
-                  chartStyle={tweaks.chartStyle} onNav={nav} onOpenLesson={openLesson} />; break;
-    case 'lesson':
-      content = <window.DesktopLessonReader topicId={view.topicId} initialIdx={view.lessonIdx}
-                  onBack={backToTopic} />; break;
-    default:
-      content = <window.Dashboard onOpenTopic={openTopic} onNav={nav} />;
+    case 'home':    body = <window.MHome onNav={nav} onOpenTopic={openTopic} />; break;
+    case 'lib':     body = <window.MLib onOpenTopic={openTopic} />; break;
+    case 'concept': body = <window.MConcept chartStyle={tweaks.chartStyle} />; break;
+    case 'lab':     body = <window.MLab />; break;
+    case 'quiz':    body = <window.MQuiz />; break;
+    case 'cheat':   body = <window.MCheat />; break;
+    case 'calc':    body = <window.MCalc />; break;
+    case 'topic':   body = <window.MTopicDetail topicId={view.topicId} onBack={backToLib}
+                       chartStyle={tweaks.chartStyle} onNav={nav} onOpenLesson={openLesson} />; break;
+    case 'lesson':  body = <window.MLessonReader topicId={view.topicId} initialIdx={view.lessonIdx}
+                       onBack={backToTopic} />; break;
+    default:        body = <window.MHome onNav={nav} onOpenTopic={openTopic} />;
   }
 
-  const activeNav = (view.screen === 'topic' || view.screen === 'lesson') ? 'lib' : view.screen;
+  const activeNav = (view.screen === 'topic' || view.screen === 'lesson') ? 'lib'
+    : view.screen === 'concept' ? 'lab' : view.screen;
+
+  // Detect real phone (small viewport) → render fullscreen without bezel
+  const [bare, setBare] = useState(
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 600px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 600px)');
+    const handler = (e) => setBare(e.matches);
+    mq.addEventListener ? mq.addEventListener('change', handler) : mq.addListener(handler);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener('change', handler) : mq.removeListener(handler);
+    };
+  }, []);
+
+  const appInner = (
+    <div className="m-app" style={{height: '100%'}}>
+      <div className="m-safe-top" />
+      {body}
+      <window.MTabBar active={activeNav} onNav={nav} />
+    </div>
+  );
 
   return (
-    <>
-      <div className="app">
-        <window.Sidebar active={activeNav} onNav={nav} />
-        <main className="main" data-screen-label={`${activeNav} screen`}>
-          {content}
-        </main>
-      </div>
+    <div className={`phone-page ${bare ? 'bare' : ''}`}>
+      {bare ? (
+        <div className="phone-bare">{appInner}</div>
+      ) : (
+        <div className="phone-wrap">
+          <window.IOSDevice width={402} height={874} dark={tweaks.dark}>
+            {appInner}
+          </window.IOSDevice>
+        </div>
+      )}
 
       <window.TweaksPanel title="Tweaks">
         <window.TweakSection label="主題色 Theme" />
         <window.TweakColor
           label="Accent"
-          value={SWATCH_BY_THEME[tweaks.theme] || SWATCH_BY_THEME.clinical}
-          onChange={(hex) => {
-            const themeKey = THEME_BY_SWATCH[hex.toLowerCase()] || 'clinical';
-            setTweak('theme', themeKey);
-          }}
+          value={SWATCH_BY_THEME[tweaks.theme] || '#0e8c8c'}
+          onChange={(hex) => setTweak('theme', THEME_BY_SWATCH[hex.toLowerCase()] || 'clinical')}
           options={['#0e8c8c', '#3b4cca', '#cf5a3e', '#3a3f4a']} />
 
         <window.TweakSection label="字體 Typography" />
@@ -178,18 +173,17 @@ function App() {
           value={view.screen === 'topic' ? 'lib' : view.screen}
           onChange={(v) => { setView({ screen: v, topicId: null }); setTweak('screen', v); }}
           options={[
-            { value: 'home',    label: '儀表板 Dashboard' },
-            { value: 'lib',     label: '主題庫 Library' },
-            { value: 'concept', label: '互動概念 Concepts' },
+            { value: 'home',    label: '儀表板' },
+            { value: 'lib',     label: '主題庫' },
+            { value: 'concept', label: '互動概念' },
             { value: 'lab',     label: '實驗室 Lab' },
-            { value: 'quiz',    label: '練習測驗 Quiz' },
-            { value: 'cheat',   label: '速查卡片 Cheat sheet' },
-            { value: 'calc',    label: '計算機 Calculators' },
-            { value: 'case',    label: '臨床情境 Case study' }
+            { value: 'quiz',    label: '練習測驗' },
+            { value: 'cheat',   label: '速查卡片' },
+            { value: 'calc',    label: '計算機' }
           ]} />
       </window.TweaksPanel>
-    </>
+    </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<MobileApp />);
