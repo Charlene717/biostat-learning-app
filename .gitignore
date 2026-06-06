@@ -1,17 +1,14 @@
-# OS / editor
+# macOS
 .DS_Store
-Thumbs.db
-*.swp
-.idea/
-.vscode/
 
-# Internal preview/thumbnail artifacts
-.thumbnail
-.*.thumbnail.png
+# Editor
+.vscode/
+.idea/
+*.swp
 
 # Logs
 *.log
-npm-debug.log*
 
-# Node (if you add tooling later)
-node_modules/
+# Project scratch
+.thumbnail
+uploads/
