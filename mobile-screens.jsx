@@ -40,9 +40,12 @@ window.MHome = function MHome({ onNav, onOpenTopic }) {
           <div className="greet">{dateStr}</div>
           <h1>{greet}，{userName}</h1>
         </div>
-        <div className="avatar" onClick={() => window.openAccountModal && window.openAccountModal()}
-          style={{cursor: 'pointer', background: UM ? UM.getActiveUser().color : 'var(--ink)'}}>
-          {UM ? UM.getActiveUser().avatar : 'Y'}
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <window.LangToggle />
+          <div className="avatar" onClick={() => window.openAccountModal && window.openAccountModal()}
+            style={{cursor: 'pointer', background: UM ? UM.getActiveUser().color : 'var(--ink)'}}>
+            {UM ? UM.getActiveUser().avatar : 'Y'}
+          </div>
         </div>
       </div>
 

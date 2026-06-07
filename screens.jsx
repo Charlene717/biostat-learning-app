@@ -17,10 +17,11 @@ window.Sidebar = function Sidebar({ active, onNav }) {
     <aside className="sidebar">
       <div className="sb-brand">
         <div className="sb-mark">μ</div>
-        <div>
+        <div style={{flex: 1}}>
           <div className="name">生物統計</div>
           <div className="sub">Biostat · Lab</div>
         </div>
+        <window.LangToggle />
       </div>
       <div className="sb-section">Learn</div>
       <nav className="sb-nav">

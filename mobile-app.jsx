@@ -109,6 +109,15 @@ function MobileApp() {
   const appInner = (
     <div className="m-app" style={{height: '100%'}}>
       <div className="m-safe-top" />
+      {activeNav !== 'home' && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(env(safe-area-inset-top, 64px) + 18px)',
+          right: 14, zIndex: 45
+        }}>
+          <window.LangToggle />
+        </div>
+      )}
       {body}
       <window.MTabBar active={activeNav} onNav={nav} />
     </div>

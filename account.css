@@ -1,4 +1,25 @@
 /* account.css — account modal styles (desktop + mobile) */
+.lang-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-2);
+  font-family: var(--f-mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.lang-toggle:hover { border-color: var(--line-2); color: var(--ink); }
+
+/* In English mode the card title is already translated → hide the duplicate
+   English subtitle that sits under it on library cards. */
+html[lang="en"] .lib-card > .en,
+html[lang="en"] .m-lib-card .en { display: none; }
+
+
 .acc-overlay {
   position: fixed; inset: 0; z-index: 9000;
   background: rgba(15, 20, 22, 0.45);
@@ -92,6 +113,37 @@
   display: grid; place-items: center;
 }
 .acc-del:hover { color: var(--bad); background: color-mix(in oklch, var(--bad) 8%, transparent); }
+
+.acc-user-actions { display: flex; gap: 2px; }
+.acc-edit {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--ink-3); cursor: pointer;
+  display: grid; place-items: center;
+}
+.acc-edit:hover { color: var(--accent-ink); background: var(--accent-soft); }
+
+.acc-user.editing { border-color: var(--accent); }
+.acc-rename {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px; font-weight: 600;
+}
+.acc-rename:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.acc-rename-actions { display: flex; gap: 6px; margin-top: 6px; }
+.acc-mini-btn {
+  padding: 5px 12px; border-radius: 7px;
+  border: 1px solid var(--line); background: var(--bg);
+  color: var(--ink-2); font-family: inherit; font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+}
+.acc-mini-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.acc-mini-btn:hover { border-color: var(--line-2); }
 
 .acc-add { display: flex; gap: 8px; }
 .acc-add input {

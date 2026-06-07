@@ -6,12 +6,39 @@ window.openAccountModal = function () {
   window.dispatchEvent(new CustomEvent('biostat-open-account'));
 };
 
+// Language toggle pill — switches the whole UI between 中文 / English
+window.LangToggle = function LangToggle({ className, style }) {
+  const [lang, setLang] = _uS(window.I18N ? window.I18N.getLang() : 'zh');
+  _uE(() => {
+    if (!window.I18N) return;
+    const unsub = window.I18N.subscribe((l) => setLang(l));
+    return unsub;
+  }, []);
+  const next = lang === 'en' ? '中' : 'EN';
+  return (
+    <button
+      className={`lang-toggle ${className || ''}`}
+      style={style}
+      title={lang === 'en' ? '切換為中文' : 'Switch to English'}
+      onClick={(e) => { e.stopPropagation(); window.I18N && window.I18N.toggle(); }}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
+        <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M2.5 12h19M12 2.5c2.5 2.6 3.8 6 3.8 9.5S14.5 18.9 12 21.5C9.5 18.9 8.2 15.5 8.2 12S9.5 5.1 12 2.5z"
+          stroke="currentColor" strokeWidth="1.5"/>
+      </svg>
+      <span>{next}</span>
+    </button>
+  );
+};
+
 window.AccountModal = function AccountModal({ onUserChange }) {
   const [open, setOpen] = _uS(false);
   const [tick, setTick] = _uS(0);   // force refresh after mutations
   const [newName, setNewName] = _uS('');
   const [importMode, setImportMode] = _uS('new');
   const [msg, setMsg] = _uS(null);
+  const [editingId, setEditingId] = _uS(null);
+  const [editName, setEditName] = _uS('');
   const fileRef = _uR(null);
 
   _uE(() => {
@@ -49,6 +76,13 @@ window.AccountModal = function AccountModal({ onUserChange }) {
     if (!confirm(`刪除帳號「${name}」？此帳號的所有學習進度將一併刪除，無法復原。`)) return;
     UM.deleteUser(id);
     refresh(true);
+  };
+  const startEdit = (u) => { setEditingId(u.id); setEditName(u.name); };
+  const cancelEdit = () => { setEditingId(null); setEditName(''); };
+  const saveEdit = (id) => {
+    const nm = editName.trim();
+    if (nm) { UM.renameUser(id, nm); refresh(true); flash('已更新帳號名稱'); }
+    setEditingId(null); setEditName('');
   };
   const doExport = () => {
     UM.downloadActive();
@@ -97,27 +131,54 @@ window.AccountModal = function AccountModal({ onUserChange }) {
             const s = UM.userSummary(u.id);
             const active = u.id === activeId;
             return (
-              <div key={u.id} className={`acc-user ${active ? 'active' : ''}`}
-                onClick={() => doSwitch(u.id)}>
+              <div key={u.id} className={`acc-user ${active ? 'active' : ''} ${editingId === u.id ? 'editing' : ''}`}
+                onClick={() => editingId === u.id ? null : doSwitch(u.id)}>
                 <div className="acc-avatar" style={{ background: u.color }}>{u.avatar}</div>
-                <div className="acc-user-info">
-                  <div className="acc-user-name">
-                    {u.name}
-                    {active && <span className="acc-badge">使用中</span>}
+                {editingId === u.id ? (
+                  <div className="acc-user-info" onClick={(e) => e.stopPropagation()}>
+                    <input className="acc-rename" autoFocus value={editName}
+                      maxLength={24}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit(u.id);
+                        if (e.key === 'Escape') cancelEdit();
+                      }} />
+                    <div className="acc-rename-actions">
+                      <button className="acc-mini-btn primary" onClick={(e) => { e.stopPropagation(); saveEdit(u.id); }}>儲存</button>
+                      <button className="acc-mini-btn" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>取消</button>
+                    </div>
                   </div>
-                  <div className="acc-user-stat">
-                    {s.answered > 0
-                      ? `${s.sessions} 次練習 · ${s.answered} 題 · 正確率 ${fmtPct(s.accuracy)}`
-                      : '尚無紀錄'}
+                ) : (
+                  <div className="acc-user-info">
+                    <div className="acc-user-name">
+                      {u.name}
+                      {active && <span className="acc-badge">使用中</span>}
+                    </div>
+                    <div className="acc-user-stat">
+                      {s.answered > 0
+                        ? `${s.sessions} 次練習 · ${s.answered} 題 · 正確率 ${fmtPct(s.accuracy)}`
+                        : '尚無紀錄'}
+                    </div>
                   </div>
-                </div>
-                <button className="acc-del" title="刪除帳號"
-                  onClick={(e) => { e.stopPropagation(); doDelete(u.id, u.name); }}>
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                    <path d="M3 4h9M6 4V3h3v1M5 4l.5 8h4L10 4" stroke="currentColor"
-                      strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                )}
+                {editingId !== u.id && (
+                  <div className="acc-user-actions">
+                    <button className="acc-edit" title="重新命名"
+                      onClick={(e) => { e.stopPropagation(); startEdit(u); }}>
+                      <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
+                        <path d="M10.5 2.5l2 2L6 11l-2.5.5.5-2.5 6.5-6.5z" stroke="currentColor"
+                          strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <button className="acc-del" title="刪除帳號"
+                      onClick={(e) => { e.stopPropagation(); doDelete(u.id, u.name); }}>
+                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                        <path d="M3 4h9M6 4V3h3v1M5 4l.5 8h4L10 4" stroke="currentColor"
+                          strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
